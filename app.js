@@ -126,11 +126,29 @@ document.addEventListener('DOMContentLoaded', () => {
     // Data Fetching Functions
     async function fetchSchools() {
         try {
-            const response = await fetch('/api/schools');
-            if (!response.ok) throw new Error(`Server responded with ${response.status}`);
-            const data = await response.json();
-            state.schools = data.data || [];
-            return data;
+            // Try both endpoints to see which works
+            try {
+                const response = await fetch('/api/axios?type=schools');
+                if (!response.ok) throw new Error(`Axios endpoint responded with ${response.status}`);
+                
+                const data = await response.json();
+                console.log('Axios schools response:', data);
+                
+                if (data.success && Array.isArray(data.data)) {
+                    state.schools = data.data;
+                    return { data: data.data };
+                }
+                throw new Error('No valid data in axios response');
+            } catch (axiosError) {
+                console.error('Axios attempt failed:', axiosError);
+                
+                // Fallback to original endpoint
+                const response = await fetch('/api/schools');
+                if (!response.ok) throw new Error(`Server responded with ${response.status}`);
+                const data = await response.json();
+                state.schools = data.data || [];
+                return data;
+            }
         } catch (error) {
             console.error('Error fetching schools:', error);
             throw error;
@@ -139,11 +157,29 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function fetchTeams() {
         try {
-            const response = await fetch('/api/teams');
-            if (!response.ok) throw new Error(`Server responded with ${response.status}`);
-            const data = await response.json();
-            state.teams = data.data || [];
-            return data;
+            // Try both endpoints to see which works
+            try {
+                const response = await fetch('/api/axios?type=teams');
+                if (!response.ok) throw new Error(`Axios endpoint responded with ${response.status}`);
+                
+                const data = await response.json();
+                console.log('Axios teams response:', data);
+                
+                if (data.success && Array.isArray(data.data)) {
+                    state.teams = data.data;
+                    return { data: data.data };
+                }
+                throw new Error('No valid data in axios response');
+            } catch (axiosError) {
+                console.error('Axios attempt failed:', axiosError);
+                
+                // Fallback to original endpoint
+                const response = await fetch('/api/teams');
+                if (!response.ok) throw new Error(`Server responded with ${response.status}`);
+                const data = await response.json();
+                state.teams = data.data || [];
+                return data;
+            }
         } catch (error) {
             console.error('Error fetching teams:', error);
             throw error;
@@ -152,11 +188,29 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function fetchIndividuals() {
         try {
-            const response = await fetch('/api/individuals');
-            if (!response.ok) throw new Error(`Server responded with ${response.status}`);
-            const data = await response.json();
-            state.individuals = data.data || [];
-            return data;
+            // Try both endpoints to see which works
+            try {
+                const response = await fetch('/api/axios?type=individuals');
+                if (!response.ok) throw new Error(`Axios endpoint responded with ${response.status}`);
+                
+                const data = await response.json();
+                console.log('Axios individuals response:', data);
+                
+                if (data.success && Array.isArray(data.data)) {
+                    state.individuals = data.data;
+                    return { data: data.data };
+                }
+                throw new Error('No valid data in axios response');
+            } catch (axiosError) {
+                console.error('Axios attempt failed:', axiosError);
+                
+                // Fallback to original endpoint
+                const response = await fetch('/api/individuals');
+                if (!response.ok) throw new Error(`Server responded with ${response.status}`);
+                const data = await response.json();
+                state.individuals = data.data || [];
+                return data;
+            }
         } catch (error) {
             console.error('Error fetching individuals:', error);
             throw error;

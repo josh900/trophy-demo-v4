@@ -33,7 +33,7 @@ module.exports = async (req, res) => {
       }
     };
 
-    // Create promise for HTTP request
+    // Function to handle HTTP request
     const getIndividualsData = () => {
       return new Promise((resolve, reject) => {
         const budibaseReq = https.request(options, (budibaseRes) => {
@@ -44,6 +44,9 @@ module.exports = async (req, res) => {
           });
 
           budibaseRes.on('end', () => {
+            // Log the raw response for debugging
+            console.log('Raw Budibase Response:', responseData);
+            
             // Check if the status code indicates an error
             if (budibaseRes.statusCode >= 400) {
               reject(new Error(`Budibase server responded with status code: ${budibaseRes.statusCode}`));
@@ -57,22 +60,48 @@ module.exports = async (req, res) => {
                 return;
               }
 
+              // Parse the JSON response
               const parsedData = JSON.parse(responseData);
+              console.log('Parsed Budibase Response:', JSON.stringify(parsedData));
               
-              // Check for expected data structure
-              if (!Array.isArray(parsedData) || parsedData.length === 0) {
-                reject(new Error('Invalid data structure received from Budibase'));
-                return;
+              // More flexible structure handling
+              let formattedData = {
+                data: []
+              };
+              
+              // Try to extract data based on different possible structures
+              if (Array.isArray(parsedData)) {
+                // Case 1: Array of objects at top level
+                if (parsedData.length > 0) {
+                  if (parsedData[0].data) {
+                    // Case 1.1: First element has data property
+                    formattedData.data = parsedData[0].data;
+                  } else {
+                    // Case 1.2: Array itself is the data
+                    formattedData.data = parsedData;
+                  }
+                }
+              } else if (parsedData && typeof parsedData === 'object') {
+                // Case 2: Object at top level
+                if (parsedData.data) {
+                  // Case 2.1: Has data property
+                  formattedData.data = parsedData.data;
+                } else {
+                  // Case 2.2: Object itself contains the data
+                  formattedData.data = [parsedData];
+                }
               }
-
-              resolve(parsedData[0]);
+              
+              resolve(formattedData);
             } catch (error) {
+              console.error('Parse error:', error);
               reject(new Error(`Failed to parse Budibase response: ${error.message}`));
             }
           });
         });
 
         budibaseReq.on('error', (error) => {
+          console.error('Request error:', error);
           reject(new Error(`Request to Budibase failed: ${error.message}`));
         });
 
@@ -86,10 +115,8 @@ module.exports = async (req, res) => {
     try {
       const individualsData = await getIndividualsData();
       
-      // Ensure the data field exists, even if empty
-      if (!individualsData.data) {
-        individualsData.data = [];
-      }
+      // Log the final data structure we're sending back
+      console.log('Final individuals data structure:', JSON.stringify(individualsData));
       
       res.status(200).json(individualsData);
     } catch (error) {
