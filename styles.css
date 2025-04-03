@@ -1,8 +1,8 @@
 /* Base Styles */
 :root {
-    --primary-color: #00205B;      /* Navy */
-    --secondary-color: #EFBF04;    /* Gold */
-    --accent-color: #000000;       /* Black */
+    --primary-color: #00205B;      /* Default Navy */
+    --secondary-color: #EFBF04;    /* Default Gold */
+    --accent-color: #000000;       /* Default Black */
     --text-light: #FFFFFF;
     --text-dark: #333333;
     --background-light: #F5F5F5;
@@ -114,19 +114,29 @@ main {
 }
 
 /* Card Grid Styles */
-.card-grid {
+.card-grid,
+.player-grid,
+.athletes-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
     gap: 20px;
+    justify-content: center; /* Center items horizontally */
+    padding: 0 10px; /* Add padding to prevent touching edges */
 }
 
-.card {
+.card,
+.player-card,
+.athlete-card {
     background-color: var(--card-background);
     border-radius: 8px;
     overflow: hidden;
     box-shadow: 0 4px 8px var(--shadow-color);
     transition: transform var(--transition-speed), box-shadow var(--transition-speed);
     cursor: pointer;
+    border: 1px solid transparent; /* For school color border */
+    max-width: 350px; /* Prevent cards from becoming too wide */
+    justify-self: center; /* Center card within its grid cell */
+    width: 100%; /* Allow card to fill its cell up to max-width */
 }
 
 .card:hover {
@@ -148,10 +158,18 @@ main {
     font-size: 3rem;
 }
 
+.card-media svg {
+    width: 80%;
+    height: 80%;
+    max-width: 100px;
+    max-height: 100px;
+    object-fit: contain;
+}
+
 .card-image {
     width: 100%;
     height: 100%;
-    object-fit: cover;
+    object-fit: cover; /* Keep cover for general card images */
 }
 
 .card-content {
@@ -228,12 +246,15 @@ main {
 .team-content {
     display: flex;
     flex-wrap: wrap;
-    gap: 20px;
+    gap: 30px; /* Increased gap */
     margin-bottom: 30px;
+    align-items: flex-start; /* Align items to the top */
+    justify-content: center; /* Center items when wrapping */
 }
 
 .team-media {
-    flex: 1;
+    flex: 1 1 400px; /* Allow growing, basis of 400px */
+    max-width: 600px;
     min-width: 300px;
 }
 
@@ -241,21 +262,26 @@ main {
     width: 100%;
     border-radius: 8px;
     box-shadow: 0 4px 8px var(--shadow-color);
+    object-fit: contain; /* Ensure full team photo is visible */
+    background-color: var(--background-light); /* Background for contain */
 }
 
 .trophy-container {
-    flex: 1;
+    flex: 1 1 300px; /* Allow growing, basis of 300px */
+    max-width: 400px;
     min-width: 300px;
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start; /* Align content to top */
     position: relative;
+    padding-top: 10px; /* Add some space above trophy */
 }
 
 .trophy-placeholder {
-    width: 200px;
-    height: 200px;
+    width: 100%;
+    max-width: 250px;
+    height: 250px;
     background-color: var(--background-light);
     border-radius: 8px;
     display: flex;
@@ -268,15 +294,23 @@ main {
     transition: all var(--transition-speed);
 }
 
-.trophy-placeholder i {
-    font-size: 4rem;
-    color: var(--secondary-color);
+.trophy-placeholder svg {
+    width: 60%;
+    height: 60%;
+    max-width: 100px;
+    max-height: 100px;
+    object-fit: contain;
     margin-bottom: 10px;
+}
+
+.trophy-placeholder p {
+    margin-top: 10px;
+    color: var(--text-dark);
 }
 
 .trophy-model-container {
     width: 100%;
-    height: 300px;
+    height: 350px; /* Increased height */
     position: relative;
     border-radius: 8px;
     overflow: hidden;
@@ -395,12 +429,21 @@ main {
     border-radius: 50%;
     overflow: hidden;
     border: 3px solid var(--secondary-color);
+    background-color: var(--background-light); /* Background for contain */
 }
 
-.player-photo {
+.player-photo,
+.athlete-photo {
     width: 100%;
     height: 100%;
-    object-fit: cover;
+    object-fit: contain; /* Changed from cover to contain */
+}
+
+.player-media svg,
+.athlete-media svg {
+    width: 90%;
+    height: 90%;
+    object-fit: contain;
 }
 
 .player-name {
@@ -476,12 +519,7 @@ main {
     border-radius: 8px;
     overflow: hidden;
     border: 3px solid var(--secondary-color);
-}
-
-.athlete-photo {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
+    background-color: var(--background-light); /* Background for contain */
 }
 
 .athlete-name {
@@ -590,8 +628,10 @@ footer {
         justify-content: center;
     }
     
-    .card-grid, .player-grid, .athletes-grid {
-        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    .card-grid,
+    .player-grid,
+    .athletes-grid {
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); /* Adjust min size */
     }
     
     .team-content, .player-header, .athlete-header {
@@ -619,7 +659,9 @@ footer {
         padding: 15px;
     }
     
-    .card-grid, .player-grid, .athletes-grid {
-        grid-template-columns: 1fr;
+    .card-grid,
+    .player-grid,
+    .athletes-grid {
+        grid-template-columns: 1fr; /* Single column */
     }
 }

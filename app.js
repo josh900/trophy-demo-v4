@@ -21,6 +21,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const homeButton = document.getElementById('home-button');
     const loadingSpinner = document.getElementById('loading-spinner');
 
+    // Default Theme Colors (for resetting)
+    const defaultTheme = {
+        primary: '#00205B',
+        secondary: '#EFBF04',
+        backgroundGradient: 'linear-gradient(135deg, #F5F5F5 0%, #E0E0E0 100%)'
+    };
+
     // Sport Icons Mapping - More comprehensive with generic terms for matching
     const sportIcons = {
         // Basketball
@@ -91,13 +98,13 @@ document.addEventListener('DOMContentLoaded', () => {
         "women's cross country": "fa-running",
         
         // Lacrosse
-        "lacrosse": "fa-lacrosse-stick",
-        "men's lacrosse": "fa-lacrosse-stick",
-        "women's lacrosse": "fa-lacrosse-stick",
+        "lacrosse": "fa-hockey-stick",
+        "men's lacrosse": "fa-hockey-stick",
+        "women's lacrosse": "fa-hockey-stick",
         
         // Cheerleading
-        "cheer": "fa-smile",
-        "cheerleading": "fa-smile",
+        "cheer": "fa-bullhorn",
+        "cheerleading": "fa-bullhorn",
         
         // Bowling
         "bowling": "fa-bowling-ball",
@@ -120,44 +127,52 @@ document.addEventListener('DOMContentLoaded', () => {
         "gaming": "fa-gamepad"
     };
 
-    // SVG Fallback Images
+    // Improved SVG Fallback Images with Gender Variations
     const svgFallbacks = {
-        school: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100%" height="100%" preserveAspectRatio="xMidYMid meet">
-            <rect x="10" y="50" width="80" height="40" fill="#00205B"/>
-            <polygon points="50,10 10,50 90,50" fill="#00205B"/>
-            <rect x="40" y="70" width="20" height="20" fill="#EFBF04"/>
+        school: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100%" height="100%" preserveAspectRatio="xMidYMid meet" fill="var(--primary-color, #00205B)">
+            <rect x="10" y="50" width="80" height="40" />
+            <polygon points="50,10 10,50 90,50" />
+            <rect x="40" y="70" width="20" height="20" fill="var(--secondary-color, #EFBF04)"/>
             <rect x="25" y="60" width="10" height="10" fill="#FFFFFF"/>
             <rect x="65" y="60" width="10" height="10" fill="#FFFFFF"/>
         </svg>`,
         
-        player: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100%" height="100%" preserveAspectRatio="xMidYMid meet">
-            <circle cx="50" cy="30" r="20" fill="#00205B"/>
-            <path d="M50,50 L50,100 M30,60 L70,60" stroke="#00205B" stroke-width="10" fill="none"/>
-            <path d="M20,100 L40,60 M80,100 L60,60" stroke="#00205B" stroke-width="6" fill="none"/>
+        // Base Male Silhouette
+        player_male: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100%" height="100%" preserveAspectRatio="xMidYMid meet" fill="var(--primary-color, #00205B)">
+            <circle cx="50" cy="25" r="15"/>
+            <path d="M50,40 Q50,50 40,55 L40,75 Q40,85 35,85 L35,95 L45,95 Q50,95 50,90 L50,65 Q50,60 60,65 L60,95 L70,95 L70,85 Q65,85 60,75 L60,55 Q50,50 50,40 Z"/>
         </svg>`,
         
-        athlete: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100%" height="100%" preserveAspectRatio="xMidYMid meet">
-            <circle cx="50" cy="25" r="15" fill="#00205B"/>
-            <path d="M50,40 L50,80 M30,55 L70,55" stroke="#00205B" stroke-width="8" fill="none"/>
-            <path d="M25,95 L40,55 M75,95 L60,55" stroke="#00205B" stroke-width="5" fill="none"/>
-            <circle cx="50" cy="15" r="5" fill="#EFBF04"/>
+        // Base Female Silhouette
+        player_female: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100%" height="100%" preserveAspectRatio="xMidYMid meet" fill="var(--primary-color, #00205B)">
+            <circle cx="50" cy="25" r="15"/>
+            <path d="M50,40 Q50,50 45,55 L40,85 Q40,95 35,95 L45,95 Q50,95 55,95 L65,95 Q60,95 60,85 L55,55 Q50,50 50,40 Z"/>
+            <path d="M45,55 L40,85" stroke="var(--primary-color, #00205B)" stroke-width="5" fill="none"/>
+            <path d="M55,55 L60,85" stroke="var(--primary-color, #00205B)" stroke-width="5" fill="none"/>
         </svg>`,
         
-        team: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100%" height="100%" preserveAspectRatio="xMidYMid meet">
-            <circle cx="30" cy="25" r="10" fill="#00205B"/>
-            <circle cx="50" cy="20" r="10" fill="#00205B"/>
-            <circle cx="70" cy="25" r="10" fill="#00205B"/>
-            <path d="M30,35 L30,70 M20,45 L40,45" stroke="#00205B" stroke-width="5" fill="none"/>
-            <path d="M50,30 L50,70 M40,45 L60,45" stroke="#00205B" stroke-width="5" fill="none"/>
-            <path d="M70,35 L70,70 M60,45 L80,45" stroke="#00205B" stroke-width="5" fill="none"/>
-            <rect x="15" y="70" width="70" height="10" fill="#EFBF04"/>
+        athlete: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100%" height="100%" preserveAspectRatio="xMidYMid meet" fill="var(--primary-color, #00205B)">
+            <circle cx="50" cy="25" r="15"/>
+            <path d="M50,40 L50,80 M30,55 L70,55" stroke="var(--primary-color, #00205B)" stroke-width="8" fill="none"/>
+            <path d="M25,95 L40,55 M75,95 L60,55" stroke="var(--primary-color, #00205B)" stroke-width="5" fill="none"/>
+            <circle cx="50" cy="15" r="5" fill="var(--secondary-color, #EFBF04)"/>
         </svg>`,
         
-        trophy: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100%" height="100%" preserveAspectRatio="xMidYMid meet">
-            <path d="M35,20 L65,20 L65,40 C65,50 70,55 75,55 L75,60 C65,60 65,70 65,70 L35,70 C35,70 35,60 25,60 L25,55 C30,55 35,50 35,40 Z" fill="#EFBF04"/>
-            <rect x="40" y="70" width="20" height="10" fill="#EFBF04"/>
-            <rect x="30" y="80" width="40" height="5" fill="#EFBF04"/>
-            <rect x="35" y="10" width="30" height="10" fill="#00205B"/>
+        team: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100%" height="100%" preserveAspectRatio="xMidYMid meet" fill="var(--primary-color, #00205B)">
+            <circle cx="30" cy="25" r="10"/>
+            <circle cx="50" cy="20" r="10"/>
+            <circle cx="70" cy="25" r="10"/>
+            <path d="M30,35 L30,70 M20,45 L40,45" stroke="var(--primary-color, #00205B)" stroke-width="5" fill="none"/>
+            <path d="M50,30 L50,70 M40,45 L60,45" stroke="var(--primary-color, #00205B)" stroke-width="5" fill="none"/>
+            <path d="M70,35 L70,70 M60,45 L80,45" stroke="var(--primary-color, #00205B)" stroke-width="5" fill="none"/>
+            <rect x="15" y="70" width="70" height="10" fill="var(--secondary-color, #EFBF04)"/>
+        </svg>`,
+        
+        trophy: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100%" height="100%" preserveAspectRatio="xMidYMid meet" fill="var(--secondary-color, #EFBF04)">
+            <path d="M35,20 L65,20 L65,40 C65,50 70,55 75,55 L75,60 C65,60 65,70 65,70 L35,70 C35,70 35,60 25,60 L25,55 C30,55 35,50 35,40 Z" />
+            <rect x="40" y="70" width="20" height="10"/>
+            <rect x="30" y="80" width="40" height="5"/>
+            <rect x="35" y="10" width="30" height="10" fill="var(--primary-color, #00205B)"/>
         </svg>`
     };
 
@@ -170,10 +185,16 @@ document.addEventListener('DOMContentLoaded', () => {
         // Add trophy modal to body
         const trophyModal = document.createElement('div');
         trophyModal.className = 'trophy-modal';
+        trophyModal.id = 'trophy-fullscreen-modal';
         trophyModal.innerHTML = `
             <div class="trophy-modal-content">
                 <button class="close-modal-btn"><i class="fas fa-times"></i></button>
-                <iframe class="modal-trophy-model" src="" frameborder="0"></iframe>
+                <model-viewer id="modal-trophy-viewer" src="" alt="Championship Trophy Model" 
+                              ar ar-modes="webxr scene-viewer quick-look" 
+                              camera-controls touch-action="pan-y" 
+                              auto-rotate shadow-intensity="1"
+                              style="width: 100%; height: 100%; --mv-progress-mask: none;">
+                </model-viewer>
             </div>
         `;
         document.body.appendChild(trophyModal);
@@ -182,6 +203,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const closeModalBtn = trophyModal.querySelector('.close-modal-btn');
         closeModalBtn.addEventListener('click', () => {
             trophyModal.style.display = 'none';
+            // Stop rotation when closing
+            const modalViewer = document.getElementById('modal-trophy-viewer');
+            if(modalViewer) modalViewer.removeAttribute('auto-rotate'); 
         });
 
         // Load data and render initial view
@@ -394,32 +418,53 @@ document.addEventListener('DOMContentLoaded', () => {
         state.selectedAthlete = null;
         state.currentView = 'schools';
         renderView('schools');
+        resetThemeColors(); // Reset theme on navigating home
     }
 
     // Helper for updating theme based on school colors
     function updateThemeColors(school) {
-        if (!school) return;
-        
-        // Update header colors
-        const header = document.querySelector('header');
-        if (header) {
-            header.style.backgroundColor = school.primary_color || '#00205B';
+        const root = document.documentElement;
+        if (school && school.primary_color && school.secondary_color) {
+            root.style.setProperty('--primary-color', school.primary_color);
+            root.style.setProperty('--secondary-color', school.secondary_color);
+            document.body.style.background = `linear-gradient(135deg, ${school.primary_color}22 0%, #E0E0E0 100%)`;
+        } else {
+            // If no school or colors missing, reset to defaults
+            resetThemeColors();
         }
         
-        // Update buttons colors
+        // Force update on specific elements that might not inherit CSS vars correctly
+        const header = document.querySelector('header');
+        if (header) {
+            header.style.backgroundColor = school ? school.primary_color : defaultTheme.primary;
+        }
         const navButtons = document.querySelectorAll('.nav-button');
         navButtons.forEach(button => {
-            button.style.borderColor = school.secondary_color || '#EFBF04';
+            button.style.borderColor = school ? school.secondary_color : defaultTheme.secondary;
         });
+    }
+
+    // Function to reset theme to defaults
+    function resetThemeColors() {
+        const root = document.documentElement;
+        root.style.setProperty('--primary-color', defaultTheme.primary);
+        root.style.setProperty('--secondary-color', defaultTheme.secondary);
+        document.body.style.background = defaultTheme.backgroundGradient;
         
-        // Update body background
-        document.body.style.background = `linear-gradient(135deg, ${school.primary_color}22 0%, #E0E0E0 100%)`;
-        
-        // Update view title colors
+        // Reset specific elements
+        const header = document.querySelector('header');
+        if (header) {
+            header.style.backgroundColor = defaultTheme.primary;
+        }
+        const navButtons = document.querySelectorAll('.nav-button');
+        navButtons.forEach(button => {
+            button.style.borderColor = defaultTheme.secondary;
+        });
+        // Reset any dynamic title colors if needed
         const viewTitle = document.querySelector('.view-title');
         if (viewTitle) {
-            viewTitle.style.color = school.primary_color || '#00205B';
-            viewTitle.style.borderBottomColor = school.secondary_color || '#EFBF04';
+            viewTitle.style.color = defaultTheme.primary;
+            viewTitle.style.borderBottomColor = defaultTheme.secondary;
         }
     }
 
@@ -428,12 +473,16 @@ document.addEventListener('DOMContentLoaded', () => {
         // Clear the content container
         contentContainer.innerHTML = '';
         
+        // Reset theme only if navigating back to schools view
+        if (viewName === 'schools') {
+            resetThemeColors();
+        }
+        
         // Render the appropriate view
         switch (viewName) {
             case 'schools':
                 renderSchoolsView();
-                // Reset theme colors to default
-                updateThemeColors(null);
+                // Resetting theme is handled above
                 break;
             case 'categories':
                 renderCategoriesView();
@@ -470,7 +519,7 @@ document.addEventListener('DOMContentLoaded', () => {
             default:
                 console.error('Unknown view:', viewName);
                 renderSchoolsView(); // Fallback to schools view
-                updateThemeColors(null);
+                resetThemeColors();
         }
 
         // Update back button visibility
@@ -484,22 +533,67 @@ document.addEventListener('DOMContentLoaded', () => {
     function getSportIcon(sportName) {
         if (!sportName) return 'fa-trophy';
         
-        const lowercaseSport = sportName.toLowerCase();
+        const lowercaseSport = sportName.toLowerCase().trim();
         
         // Check direct match first
         if (sportIcons[lowercaseSport]) {
             return sportIcons[lowercaseSport];
         }
         
-        // If no direct match, search for partial matches
-        for (const [key, icon] of Object.entries(sportIcons)) {
-            if (lowercaseSport.includes(key)) {
-                return icon;
+        // If no direct match, search for partial matches (more specific first)
+        const keywords = [
+            'basketball', 'football', 'baseball', 'softball', 'soccer', 'volleyball',
+            'track & field', 'track and field', 'track', 'wrestling', 'swimming',
+            'ice hockey', 'field hockey', 'hockey', 'golf', 'tennis', 'cross country', 
+            'lacrosse', 'cheerleading', 'cheer', 'bowling', 'chess', 'fishing', 
+            'skiing', 'ski', 'archery', 'esports', 'gaming'
+        ];
+        
+        for (const key of keywords) {
+            if (lowercaseSport.includes(key) && sportIcons[key]) {
+                return sportIcons[key];
             }
         }
         
-        // Default to trophy if no match found
+        // Default to trophy if no specific match found
         return 'fa-trophy';
+    }
+
+    // Helper to get appropriate SVG fallback based on context
+    function getSvgFallback(type = 'player', gender = null, sport = null) {
+        let baseSvg = '';
+        
+        switch(type) {
+            case 'school':
+                baseSvg = svgFallbacks.school;
+                break;
+            case 'team':
+                baseSvg = svgFallbacks.team;
+                break;
+            case 'trophy':
+                baseSvg = svgFallbacks.trophy;
+                break;
+            case 'athlete':
+                baseSvg = svgFallbacks.athlete; // Use generic athlete for now
+                break;
+            case 'player':
+            default:
+                // Basic gender selection
+                baseSvg = (gender && gender.toLowerCase().startsWith('f')) ? svgFallbacks.player_female : svgFallbacks.player_male;
+                break;
+        }
+        
+        // Inject current theme colors into SVG
+        const primaryColor = getComputedStyle(document.documentElement).getPropertyValue('--primary-color').trim() || defaultTheme.primary;
+        const secondaryColor = getComputedStyle(document.documentElement).getPropertyValue('--secondary-color').trim() || defaultTheme.secondary;
+        
+        let finalSvg = baseSvg.replace(/var(--primary-color, #00205B)/g, primaryColor);
+        finalSvg = finalSvg.replace(/var(--secondary-color, #EFBF04)/g, secondaryColor);
+        
+        // TODO: Add simple sport-specific elements if needed later
+        // Example: if (sport && sport.toLowerCase().includes('basketball')) { ... add circle ... }
+        
+        return finalSvg;
     }
 
     // Schools View
@@ -525,16 +619,19 @@ document.addEventListener('DOMContentLoaded', () => {
         const cardImage = clone.querySelector('.card-image');
         const cardTitle = clone.querySelector('.card-title');
         
-        // Set school card styles based on school colors
-        cardElement.style.borderColor = school.primary_color || '#00205B';
-        cardMedia.style.backgroundColor = school.primary_color || '#00205B';
+        // Set school card styles based on school colors (using defaults if needed)
+        const primaryColor = school.primary_color || defaultTheme.primary;
+        const secondaryColor = school.secondary_color || defaultTheme.secondary;
+        
+        cardElement.style.borderColor = primaryColor;
+        cardMedia.style.backgroundColor = primaryColor; // Keep background for fallback case
         
         // Set image or fallback
         if (school.media_url) {
             cardImage.src = school.media_url;
         } else {
-            // Use SVG fallback
-            cardMedia.innerHTML = svgFallbacks.school;
+            // Use SVG fallback, inject colors
+            cardMedia.innerHTML = getSvgFallback('school');
             cardImage.style.display = 'none';
         }
         
@@ -545,6 +642,7 @@ document.addEventListener('DOMContentLoaded', () => {
         cardElement.addEventListener('click', () => {
             state.selectedSchool = school;
             navigateToView('categories');
+            updateThemeColors(school); // Update theme when school is selected
         });
         
         return clone;
@@ -557,13 +655,18 @@ document.addEventListener('DOMContentLoaded', () => {
         const title = clone.querySelector('.view-title');
         
         title.textContent = `${state.selectedSchool.name} - Select a Category`;
+        // Theme colors are applied by renderView -> updateThemeColors
         
-        // Apply school colors to cards
+        // Apply school colors to cards dynamically
         const categoryCards = clone.querySelectorAll('.category-card');
+        const primaryColor = state.selectedSchool.primary_color || defaultTheme.primary;
+        const secondaryColor = state.selectedSchool.secondary_color || defaultTheme.secondary;
+        
         categoryCards.forEach(card => {
             const cardMedia = card.querySelector('.card-media');
-            cardMedia.style.backgroundColor = state.selectedSchool.primary_color || '#00205B';
-            card.querySelector('i').style.color = state.selectedSchool.secondary_color || '#EFBF04';
+            // Use CSS variables for gradient if possible, or fallback to direct style
+            cardMedia.style.background = `linear-gradient(135deg, ${primaryColor} 0%, #000000 100%)`; 
+            card.querySelector('i').style.color = secondaryColor;
             
             card.addEventListener('click', () => {
                 const category = card.dataset.category;
@@ -590,8 +693,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const sportsGrid = clone.querySelector('#sports-grid');
         
         title.textContent = `${state.selectedSchool.name} - Sports`;
-        title.style.color = state.selectedSchool.primary_color || '#00205B';
-        title.style.borderBottomColor = state.selectedSchool.secondary_color || '#EFBF04';
+        // Theme colors are applied by renderView -> updateThemeColors
         
         // Get unique sports for the selected school
         const sports = [...new Set(
@@ -600,10 +702,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 .map(team => team.sport_name)
         )];
         
-        sports.forEach(sport => {
-            const sportCard = createSportCard(sport);
-            sportsGrid.appendChild(sportCard);
-        });
+        if (sports.length === 0) {
+            sportsGrid.innerHTML = '<p style="grid-column: 1 / -1; text-align: center;">No sports teams found for this school.</p>';
+        } else {
+            sports.forEach(sport => {
+                const sportCard = createSportCard(sport);
+                sportsGrid.appendChild(sportCard);
+            });
+        }
         
         contentContainer.appendChild(clone);
     }
@@ -619,12 +725,13 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Set icon and title
         const sportIconClass = getSportIcon(sport);
+        iconElement.className = 'fas'; // Reset classes first
         iconElement.classList.add(sportIconClass);
         titleElement.textContent = sport;
         
-        // Apply school colors
-        cardMedia.style.backgroundColor = state.selectedSchool.primary_color || '#00205B';
-        iconElement.style.color = state.selectedSchool.secondary_color || '#EFBF04';
+        // Apply school colors using CSS variables where possible
+        cardMedia.style.backgroundColor = 'var(--primary-color)';
+        iconElement.style.color = 'var(--secondary-color)';
         
         // Add click event
         cardElement.addEventListener('click', () => {
@@ -643,17 +750,22 @@ document.addEventListener('DOMContentLoaded', () => {
         const yearsGrid = clone.querySelector('#years-grid');
         
         title.textContent = `${state.selectedSchool.name} - ${state.selectedSport} Championships`;
+        // Theme colors applied by updateThemeColors
         
         // Get teams for the selected school and sport
         const teams = state.teams.filter(team => 
             team.school_name === state.selectedSchool.name && 
             team.sport_name === state.selectedSport
-        );
+        ).sort((a, b) => b.year - a.year); // Sort by year descending
         
-        teams.forEach(team => {
-            const yearCard = createYearCard(team);
-            yearsGrid.appendChild(yearCard);
-        });
+        if (teams.length === 0) {
+            yearsGrid.innerHTML = '<p style="grid-column: 1 / -1; text-align: center;">No championship years found for this sport.</p>';
+        } else {
+            teams.forEach(team => {
+                const yearCard = createYearCard(team);
+                yearsGrid.appendChild(yearCard);
+            });
+        }
         
         contentContainer.appendChild(clone);
     }
@@ -667,11 +779,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const subtitleElement = clone.querySelector('.card-subtitle');
         
         titleElement.textContent = team.year;
-        subtitleElement.textContent = team.achievement;
+        subtitleElement.textContent = team.achievement || 'Championship';
         
-        // Apply school colors
-        cardElement.style.backgroundColor = state.selectedSchool.primary_color || '#00205B';
-        titleElement.style.color = state.selectedSchool.secondary_color || '#EFBF04';
+        // Apply school colors using CSS variables
+        cardElement.style.background = `linear-gradient(135deg, var(--primary-color) 0%, var(--accent-color) 100%)`;
+        titleElement.style.color = 'var(--secondary-color)';
         
         // Add click event
         cardElement.addEventListener('click', () => {
@@ -688,60 +800,61 @@ document.addEventListener('DOMContentLoaded', () => {
         const template = document.getElementById('team-detail-template');
         const clone = template.content.cloneNode(true);
         
-        // Apply school colors
+        // Apply school colors (relying on CSS variables set by updateThemeColors)
         const teamTitle = clone.querySelector('.team-title');
         teamTitle.textContent = `${state.selectedSchool.name} ${state.selectedSport} (${state.selectedYear})`;
-        teamTitle.style.color = state.selectedSchool.primary_color || '#00205B';
+        // teamTitle color set by .view-title style or specific CSS if needed
         
         const teamAchievement = clone.querySelector('.team-achievement');
-        teamAchievement.textContent = state.selectedTeam.achievement;
-        teamAchievement.style.backgroundColor = state.selectedSchool.primary_color || '#00205B';
-        teamAchievement.style.color = state.selectedSchool.secondary_color || '#EFBF04';
+        teamAchievement.textContent = state.selectedTeam.achievement || 'Championship';
+        teamAchievement.style.backgroundColor = 'var(--primary-color)';
+        teamAchievement.style.color = 'var(--secondary-color)';
         
         // Set team photo
         const teamPhoto = clone.querySelector('.team-photo');
-        const teamMedia = clone.querySelector('.team-media');
+        const teamMediaContainer = clone.querySelector('.team-media');
         
         if (state.selectedTeam.team_photo_url) {
             teamPhoto.src = state.selectedTeam.team_photo_url;
             teamPhoto.alt = `${state.selectedSchool.name} ${state.selectedSport} Team ${state.selectedYear}`;
+            teamPhoto.style.display = 'block'; // Ensure image is visible
+            // Remove any existing SVG
+            const existingSvg = teamMediaContainer.querySelector('svg');
+            if (existingSvg) existingSvg.remove();
         } else {
             // Use SVG fallback for team
-            teamMedia.innerHTML = svgFallbacks.team;
-            teamPhoto.style.display = 'none';
+            teamMediaContainer.innerHTML = getSvgFallback('team'); 
+            teamPhoto.style.display = 'none'; // Hide image element
         }
         
         // Handle trophy model
         const trophyContainer = clone.querySelector('.trophy-container');
+        trophyContainer.innerHTML = ''; // Clear previous content
         
-        // Check if we have a trophy model URL
         if (state.selectedTeam.trophy_model_url) {
-            // Replace placeholder with actual 3D model viewer
-            trophyContainer.innerHTML = `
-                <h3>Championship Trophy</h3>
-                <div class="trophy-model-container">
-                    <button class="expand-trophy-btn"><i class="fas fa-expand"></i></button>
-                    <iframe class="trophy-model" src="${state.selectedTeam.trophy_model_url}" frameborder="0"></iframe>
-                </div>
-            `;
-            
+            // Use the trophy model template
+            const modelTemplate = document.getElementById('trophy-model-template');
+            const modelClone = modelTemplate.content.cloneNode(true);
+            const modelViewer = modelClone.querySelector('model-viewer');
+            modelViewer.src = state.selectedTeam.trophy_model_url;
+            trophyContainer.appendChild(modelClone);
+
             // Add expand button functionality
             const expandBtn = trophyContainer.querySelector('.expand-trophy-btn');
             expandBtn.addEventListener('click', () => {
-                const trophyModal = document.querySelector('.trophy-modal');
-                const modalIframe = trophyModal.querySelector('.modal-trophy-model');
-                modalIframe.src = state.selectedTeam.trophy_model_url;
+                const trophyModal = document.getElementById('trophy-fullscreen-modal');
+                const modalViewer = document.getElementById('modal-trophy-viewer');
+                modalViewer.src = state.selectedTeam.trophy_model_url;
+                modalViewer.setAttribute('auto-rotate', ''); // Start rotation
                 trophyModal.style.display = 'flex';
             });
         } else {
-            // Use the trophy placeholder with SVG
-            trophyContainer.innerHTML = `
-                <h3>Championship Trophy</h3>
-                <div class="trophy-placeholder">
-                    ${svgFallbacks.trophy}
-                    <p>3D Trophy Model not available</p>
-                </div>
-            `;
+            // Use the trophy placeholder template
+            const placeholderTemplate = document.getElementById('trophy-placeholder-template');
+            const placeholderClone = placeholderTemplate.content.cloneNode(true);
+            const placeholderDiv = placeholderClone.querySelector('.trophy-placeholder');
+            placeholderDiv.insertAdjacentHTML('afterbegin', getSvgFallback('trophy')); // Add SVG
+            trophyContainer.appendChild(placeholderClone);
         }
         
         // Get players for this team
@@ -754,10 +867,14 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Render player cards
         const rosterGrid = clone.querySelector('#roster-grid');
-        players.forEach(player => {
-            const playerCard = createPlayerCard(player);
-            rosterGrid.appendChild(playerCard);
-        });
+        if (players.length === 0) {
+             rosterGrid.innerHTML = '<p style="grid-column: 1 / -1; text-align: center;">No players found for this team.</p>';
+        } else {
+            players.forEach(player => {
+                const playerCard = createPlayerCard(player);
+                rosterGrid.appendChild(playerCard);
+            });
+        }
         
         contentContainer.appendChild(clone);
     }
@@ -773,22 +890,29 @@ document.addEventListener('DOMContentLoaded', () => {
         const playerPosition = clone.querySelector('.player-position');
         const playerNumber = clone.querySelector('.player-number');
         
+        // Clear existing content in cardMedia
+        cardMedia.innerHTML = ''; 
+        // Re-add the img element for potential use
+        cardMedia.appendChild(playerImage);
+        
         // Set image or fallback
         if (player.media_url) {
             playerImage.src = player.media_url;
+            playerImage.style.display = 'block';
         } else {
-            // Use SVG fallback
-            cardMedia.innerHTML = svgFallbacks.player;
+            // Use SVG fallback - attempt gender detection
+            const gender = player.gender || (player.name && (player.name.toLowerCase().includes('women') || player.name.toLowerCase().includes('girl')) ? 'female' : 'male');
+            cardMedia.innerHTML = getSvgFallback('player', gender, state.selectedSport);
             playerImage.style.display = 'none';
         }
         
-        playerImage.alt = player.name;
-        playerName.textContent = player.name;
+        playerImage.alt = player.name || 'Player';
+        playerName.textContent = player.name || 'Unknown Player';
         playerPosition.textContent = player.position || '';
         playerNumber.textContent = player.number ? `#${player.number}` : '';
         
-        // Apply school colors
-        cardElement.style.borderColor = state.selectedSchool.primary_color || '#00205B';
+        // Apply school colors using CSS variables
+        cardElement.style.borderColor = 'var(--primary-color)';
         
         // Add click event
         cardElement.addEventListener('click', () => {
@@ -806,17 +930,38 @@ document.addEventListener('DOMContentLoaded', () => {
         
         const player = state.selectedPlayer;
         
+        // Apply theme colors
+        const playerNameTitle = clone.querySelector('.player-name');
+        playerNameTitle.style.color = 'var(--primary-color)';
+        const statsHeader = clone.querySelector('.player-stats h3');
+        statsHeader.style.color = 'var(--primary-color)';
+        statsHeader.style.borderBottomColor = 'var(--secondary-color)';
+        
         // Set player details
-        clone.querySelector('.player-photo').src = player.media_url || '/placeholder-player.png';
-        clone.querySelector('.player-name').textContent = player.name;
+        const playerPhoto = clone.querySelector('.player-photo');
+        const playerMediaContainer = clone.querySelector('.player-media');
+        playerMediaContainer.style.borderColor = 'var(--secondary-color)';
+        
+        if (player.media_url) {
+            playerPhoto.src = player.media_url;
+            playerPhoto.style.display = 'block';
+            const existingSvg = playerMediaContainer.querySelector('svg');
+            if (existingSvg) existingSvg.remove();
+        } else {
+             const gender = player.gender || (player.name && (player.name.toLowerCase().includes('women') || player.name.toLowerCase().includes('girl')) ? 'female' : 'male');
+            playerMediaContainer.innerHTML = getSvgFallback('player', gender, state.selectedSport);
+            playerPhoto.style.display = 'none';
+        }
+        
+        playerNameTitle.textContent = player.name || 'Unknown Player';
         
         const numberPosition = clone.querySelector('.player-number-position');
-        if (player.number && player.position) {
-            numberPosition.textContent = `#${player.number} - ${player.position}`;
-        } else if (player.number) {
-            numberPosition.textContent = `#${player.number}`;
-        } else if (player.position) {
-            numberPosition.textContent = player.position;
+        let numPosText = '';
+        if (player.number) numPosText += `#${player.number}`;
+        if (player.position) numPosText += (numPosText ? ' - ' : '') + player.position;
+        if (numPosText) {
+            numberPosition.textContent = numPosText;
+            numberPosition.style.display = 'block';
         } else {
             numberPosition.style.display = 'none';
         }
@@ -826,32 +971,39 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Create stats cards
         const statsGrid = clone.querySelector('.stats-grid');
+        let statsFound = false;
         
-        // Check for basketball stats
-        if (player.assists) {
-            addStatCard(statsGrid, player.assists, 'Assists');
-        }
-        if (player.rebounds) {
-            addStatCard(statsGrid, player.rebounds, 'Rebounds');
-        }
-        if (player.points_per_game) {
-            addStatCard(statsGrid, player.points_per_game, 'PPG');
-        }
+        // Check for common stats (case-insensitive keys if possible from data source)
+        const checkStat = (key, label) => {
+            if (player[key] !== null && player[key] !== undefined && player[key] !== '') {
+                addStatCard(statsGrid, player[key], label);
+                statsFound = true;
+            }
+        };
+
+        checkStat('assists', 'Assists');
+        checkStat('rebounds', 'Rebounds');
+        checkStat('points_per_game', 'PPG');
+        checkStat('passing_yards', 'Passing Yards');
+        checkStat('touchdowns', 'Touchdowns');
+        checkStat('completion_percentage', 'Completion %');
+        checkStat('goals', 'Goals');
+        checkStat('saves', 'Saves');
+        checkStat('batting_average', 'Batting Avg');
+        checkStat('home_runs', 'Home Runs');
+        checkStat('era', 'ERA');
+        checkStat('wins', 'Wins');
+        checkStat('losses', 'Losses');
+        checkStat('tackles', 'Tackles');
         
-        // Check for football stats
-        if (player.passing_yards) {
-            addStatCard(statsGrid, player.passing_yards, 'Passing Yards');
-        }
-        if (player.touchdowns) {
-            addStatCard(statsGrid, player.touchdowns, 'Touchdowns');
-        }
-        if (player.completion_percentage) {
-            addStatCard(statsGrid, player.completion_percentage, 'Completion %');
-        }
-        
-        // Check for other stats
+        // Check for other stats field
         if (player.other_stat_name && player.other_stat_value) {
             addStatCard(statsGrid, player.other_stat_value, player.other_stat_name);
+            statsFound = true;
+        }
+
+        if (!statsFound) {
+            statsGrid.innerHTML = '<p style="grid-column: 1 / -1; text-align: center;">No statistics available for this player.</p>';
         }
         
         contentContainer.appendChild(clone);
@@ -864,6 +1016,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const statValue = document.createElement('div');
         statValue.className = 'stat-value';
         statValue.textContent = value;
+        statValue.style.color = 'var(--primary-color)'; // Use theme color
         
         const statLabel = document.createElement('div');
         statLabel.className = 'stat-label';
@@ -891,6 +1044,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         clone.querySelector('.view-title').textContent = 
             `${state.selectedSchool.name} - ${title}`;
+        // Theme colors applied by updateThemeColors
         
         const athletesGrid = clone.querySelector('#athletes-grid');
         
@@ -898,12 +1052,16 @@ document.addEventListener('DOMContentLoaded', () => {
         const athletes = state.individuals.filter(individual => 
             individual.school_name === state.selectedSchool.name && 
             individual.type === athleteType
-        );
+        ).sort((a, b) => (a.name || '').localeCompare(b.name || '')); // Sort by name
         
-        athletes.forEach(athlete => {
-            const athleteCard = createAthleteCard(athlete);
-            athletesGrid.appendChild(athleteCard);
-        });
+        if (athletes.length === 0) {
+            athletesGrid.innerHTML = '<p style="grid-column: 1 / -1; text-align: center;">No athletes found in this category for this school.</p>';
+        } else {
+            athletes.forEach(athlete => {
+                const athleteCard = createAthleteCard(athlete);
+                athletesGrid.appendChild(athleteCard);
+            });
+        }
         
         contentContainer.appendChild(clone);
     }
@@ -920,40 +1078,40 @@ document.addEventListener('DOMContentLoaded', () => {
         const athleteSport = clone.querySelector('.athlete-sport');
         const athleteAffiliation = clone.querySelector('.athlete-affiliation');
         
+        // Clear existing content in cardMedia
+        cardMedia.innerHTML = ''; 
+        cardMedia.appendChild(athleteImage);
+
         // Set image or fallback
         if (athlete.media_url) {
             athleteImage.src = athlete.media_url;
+            athleteImage.style.display = 'block';
         } else {
-            // Use SVG fallback
-            cardMedia.innerHTML = svgFallbacks.athlete;
+            // Use SVG fallback - generic athlete for now
+            cardMedia.innerHTML = getSvgFallback('athlete');
             athleteImage.style.display = 'none';
         }
         
-        athleteImage.alt = athlete.name;
-        athleteName.textContent = athlete.name;
+        athleteImage.alt = athlete.name || 'Athlete';
+        athleteName.textContent = athlete.name || 'Unknown Athlete';
         
-        if (athlete.graduation_year) {
-            athleteGraduation.textContent = `Class of ${athlete.graduation_year}`;
-        } else {
-            athleteGraduation.style.display = 'none';
-        }
+        athleteGraduation.textContent = athlete.graduation_year ? `Class of ${athlete.graduation_year}` : '';
+        athleteGraduation.style.display = athlete.graduation_year ? 'block' : 'none';
         
-        if (athlete.sport) {
-            athleteSport.textContent = athlete.sport;
-        } else {
-            athleteSport.style.display = 'none';
-        }
+        athleteSport.textContent = athlete.sport || '';
+        athleteSport.style.display = athlete.sport ? 'block' : 'none';
         
+        let affiliationText = '';
         if (athlete.type === 'd1_athlete' && athlete.college) {
-            athleteAffiliation.textContent = athlete.college;
+            affiliationText = athlete.college;
         } else if (athlete.type === 'pro_athlete' && athlete.professional_team) {
-            athleteAffiliation.textContent = athlete.professional_team;
-        } else {
-            athleteAffiliation.style.display = 'none';
+            affiliationText = athlete.professional_team;
         }
+        athleteAffiliation.textContent = affiliationText;
+        athleteAffiliation.style.display = affiliationText ? 'block' : 'none';
         
-        // Apply school colors
-        cardElement.style.borderColor = state.selectedSchool.primary_color || '#00205B';
+        // Apply school colors using CSS variables
+        cardElement.style.borderColor = 'var(--primary-color)';
         
         // Add click event
         cardElement.addEventListener('click', () => {
@@ -971,43 +1129,71 @@ document.addEventListener('DOMContentLoaded', () => {
         
         const athlete = state.selectedAthlete;
         
+        // Apply theme colors
+        const athleteNameTitle = clone.querySelector('.athlete-name');
+        athleteNameTitle.style.color = 'var(--primary-color)';
+        const backgroundHeader = clone.querySelector('.athlete-background h3');
+        backgroundHeader.style.color = 'var(--primary-color)';
+        backgroundHeader.style.borderBottomColor = 'var(--secondary-color)';
+        
         // Set athlete details
-        clone.querySelector('.athlete-photo').src = athlete.media_url || '/placeholder-athlete.png';
-        clone.querySelector('.athlete-name').textContent = athlete.name;
-        
-        if (athlete.graduation_year) {
-            clone.querySelector('.athlete-graduation').textContent = `Class of ${athlete.graduation_year}`;
+        const athletePhoto = clone.querySelector('.athlete-photo');
+        const athleteMediaContainer = clone.querySelector('.athlete-media');
+        athleteMediaContainer.style.borderColor = 'var(--secondary-color)';
+
+        if (athlete.media_url) {
+            athletePhoto.src = athlete.media_url;
+            athletePhoto.style.display = 'block';
+            const existingSvg = athleteMediaContainer.querySelector('svg');
+            if (existingSvg) existingSvg.remove();
         } else {
-            clone.querySelector('.athlete-graduation').style.display = 'none';
+            athleteMediaContainer.innerHTML = getSvgFallback('athlete');
+            athletePhoto.style.display = 'none';
         }
+
+        athleteNameTitle.textContent = athlete.name || 'Unknown Athlete';
         
-        if (athlete.sport) {
-            clone.querySelector('.athlete-sport').textContent = athlete.sport;
-        } else {
-            clone.querySelector('.athlete-sport').style.display = 'none';
-        }
+        const gradElement = clone.querySelector('.athlete-graduation');
+        gradElement.textContent = athlete.graduation_year ? `Class of ${athlete.graduation_year}` : '';
+        gradElement.style.display = athlete.graduation_year ? 'block' : 'none';
         
-        if (athlete.type === 'd1_athlete' && athlete.college) {
-            clone.querySelector('.athlete-affiliation').textContent = athlete.college;
+        const sportElement = clone.querySelector('.athlete-sport');
+        sportElement.textContent = athlete.sport || '';
+        sportElement.style.display = athlete.sport ? 'block' : 'none';
+        
+        const affiliationElement = clone.querySelector('.athlete-affiliation');
+        let affiliationText = '';
+         if (athlete.type === 'd1_athlete' && athlete.college) {
+            affiliationText = athlete.college;
         } else if (athlete.type === 'pro_athlete' && athlete.professional_team) {
-            clone.querySelector('.athlete-affiliation').textContent = athlete.professional_team;
-        } else {
-            clone.querySelector('.athlete-affiliation').style.display = 'none';
+            affiliationText = athlete.professional_team;
         }
+        affiliationElement.textContent = affiliationText;
+        affiliationElement.style.display = affiliationText ? 'block' : 'none';
         
         // Create athlete description
         const descriptionContainer = clone.querySelector('.athlete-description');
+        descriptionContainer.innerHTML = ''; // Clear previous
         
-        // Build description based on available data
-        let description = document.createElement('p');
+        let descriptionText = athlete.description || ''; // Use provided description if available
         
-        if (athlete.type === 'd1_athlete') {
-            description.textContent = `${athlete.name} is a Division 1 athlete from ${state.selectedSchool.name} who graduated in ${athlete.graduation_year}. They currently compete in ${athlete.sport} at ${athlete.college}.`;
-        } else if (athlete.type === 'pro_athlete') {
-            description.textContent = `${athlete.name} is a professional athlete who graduated from ${state.selectedSchool.name} in ${athlete.graduation_year}. They play ${athlete.sport} professionally for ${athlete.professional_team}.`;
+        if (!descriptionText) { // Generate a basic description if none provided
+             let baseDesc = `${athlete.name || 'This athlete'}`;
+             if (athlete.graduation_year) baseDesc += ` graduated from ${state.selectedSchool.name} in ${athlete.graduation_year}.`;
+             else baseDesc += ` attended ${state.selectedSchool.name}.`;
+
+             if (athlete.type === 'd1_athlete') {
+                 baseDesc += ` They ${athlete.college ? `compete(d) in ${athlete.sport || 'sports'} at ${athlete.college}` : 'competed at the Division 1 level'}.`;
+             } else if (athlete.type === 'pro_athlete') {
+                 baseDesc += ` They went on to play ${athlete.sport || 'sports'} professionally${athlete.professional_team ? ` for ${athlete.professional_team}` : ''}`;
+             }
+             descriptionText = baseDesc;
         }
         
-        descriptionContainer.appendChild(description);
+        // Use textContent to prevent potential XSS from description field
+        const descriptionPara = document.createElement('p');
+        descriptionPara.textContent = descriptionText;
+        descriptionContainer.appendChild(descriptionPara);
         
         contentContainer.appendChild(clone);
     }
@@ -1021,39 +1207,55 @@ document.addEventListener('DOMContentLoaded', () => {
     // Handle image loading errors by providing fallbacks
     function setupImageFallbacks() {
         document.querySelectorAll('img').forEach(img => {
+            // Skip if already processed or if src is intentionally empty/placeholder
+            if (img.dataset.fallbackApplied || !img.src || img.src.startsWith('data:image')) {
+                return;
+            }
+            
             img.onerror = function() {
-                const alt = this.alt || '';
-                const parentElement = this.parentNode;
+                // Prevent infinite loops if fallback also fails (though SVG shouldn't)
+                if (this.dataset.fallbackApplied) return;
+                this.dataset.fallbackApplied = 'true'; 
                 
-                // Remove the image
+                const alt = this.alt || '';
+                const parentElement = this.parentNode; // Usually the .card-media or .player-media
+                
+                // Hide broken image
                 this.style.display = 'none';
                 
-                // Determine appropriate fallback based on image type
-                if (alt.includes('School') || this.classList.contains('card-image')) {
-                    if (!parentElement.querySelector('svg')) {
-                        parentElement.innerHTML += svgFallbacks.school;
-                    }
-                } else if (alt.includes('Team') || this.classList.contains('team-photo')) {
-                    if (!parentElement.querySelector('svg')) {
-                        parentElement.innerHTML += svgFallbacks.team;
-                    }
-                } else if (alt.includes('Player') || this.classList.contains('player-image') || this.classList.contains('player-photo')) {
-                    if (!parentElement.querySelector('svg')) {
-                        parentElement.innerHTML += svgFallbacks.player;
-                    }
-                } else if (alt.includes('Athlete') || this.classList.contains('athlete-image') || this.classList.contains('athlete-photo')) {
-                    if (!parentElement.querySelector('svg')) {
-                        parentElement.innerHTML += svgFallbacks.athlete;
-                    }
-                } else {
-                    if (!parentElement.querySelector('svg')) {
-                        parentElement.innerHTML += svgFallbacks.trophy;
-                    }
+                let fallbackType = 'player'; // Default guess
+                let gender = null;
+                let sport = state.selectedSport; // Use current sport context if available
+                
+                if (this.classList.contains('card-image')) fallbackType = 'school';
+                if (this.classList.contains('team-photo')) fallbackType = 'team';
+                if (this.classList.contains('player-image') || this.classList.contains('player-photo')) fallbackType = 'player';
+                if (this.classList.contains('athlete-image') || this.classList.contains('athlete-photo')) fallbackType = 'athlete';
+                
+                // Try to infer gender for players/athletes if needed
+                if (fallbackType === 'player' || fallbackType === 'athlete'){
+                     // Basic inference (can be improved if gender data is available)
+                     if (alt.toLowerCase().includes('women') || alt.toLowerCase().includes('girl')) gender = 'female';
+                     else gender = 'male';
                 }
                 
-                // Remove onerror to prevent potential loops
-                this.onerror = null;
+                // Inject the appropriate SVG
+                parentElement.insertAdjacentHTML('beforeend', getSvgFallback(fallbackType, gender, sport));
+                
+                // Ensure parent container has correct background (important for contain)
+                parentElement.style.backgroundColor = 'var(--background-light)';
+
+                // Remove the error handler after first trigger
+                this.onerror = null; 
             };
+            
+            // Trigger error check if image might already be broken (e.g., cached 404)
+            if (!img.complete || img.naturalWidth === 0) {
+                 // Re-set src to trigger onerror if needed, avoids infinite loop on some browsers
+                 const currentSrc = img.src;
+                 img.src = ''; 
+                 img.src = currentSrc;
+            }
         });
     }
 
