@@ -43,54 +43,143 @@ document.addEventListener('DOMContentLoaded', () => {
         // Load data and render initial view
         showLoading(true);
         try {
-            await Promise.all([
-                fetchSchools(),
-                fetchTeams(),
-                fetchIndividuals()
-            ]);
-            renderView('schools');
+            // Load each data set independently to avoid one failure stopping everything
+            try {
+                await fetchSchools();
+            } catch (schoolsError) {
+                console.error('Failed to load schools data:', schoolsError);
+                // If schools data couldn't be loaded at all, we'll use empty array as fallback
+                if (!state.schools || !state.schools.length) {
+                    state.schools = [];
+                    console.warn('Using empty array for schools');
+                }
+            }
+            
+            try {
+                await fetchTeams();
+            } catch (teamsError) {
+                console.error('Failed to load teams data:', teamsError);
+                if (!state.teams || !state.teams.length) {
+                    state.teams = [];
+                    console.warn('Using empty array for teams');
+                }
+            }
+            
+            try {
+                await fetchIndividuals();
+            } catch (individualsError) {
+                console.error('Failed to load individuals data:', individualsError);
+                if (!state.individuals || !state.individuals.length) {
+                    state.individuals = [];
+                    console.warn('Using empty array for individuals');
+                }
+            }
+
+            // Check if we have any schools data to display
+            if (state.schools.length > 0) {
+                renderView('schools');
+            } else {
+                // No school data available, show error message
+                contentContainer.innerHTML = `
+                    <div class="error-container">
+                        <h2>Data Loading Error</h2>
+                        <p>We're unable to load the trophy case data at this time.</p>
+                        <p>Please try refreshing the page or contact support if the issue persists.</p>
+                        <button class="btn" onclick="location.reload()">Refresh Page</button>
+                    </div>
+                `;
+            }
         } catch (error) {
-            console.error('Error initializing application:', error);
-            alert('Failed to load data. Please try again later.');
+            console.error('Critical error initializing application:', error);
+            contentContainer.innerHTML = `
+                <div class="error-container">
+                    <h2>Application Error</h2>
+                    <p>Something went wrong while loading the application.</p>
+                    <p>Technical details: ${error.message}</p>
+                    <button class="btn" onclick="location.reload()">Refresh Page</button>
+                </div>
+            `;
         } finally {
             showLoading(false);
         }
     }
 
-    // Data Fetching Functions
+    // Data Fetching Functions with Fallback
     async function fetchSchools() {
         try {
+            // Try API first
             const response = await fetch('/api/schools');
+            if (!response.ok) throw new Error(`Server responded with ${response.status}`);
             const data = await response.json();
             state.schools = data.data;
             return data;
         } catch (error) {
-            console.error('Error fetching schools:', error);
-            throw error;
+            console.error('Error fetching schools from API:', error);
+            
+            // Fallback to local data
+            console.log('Falling back to local data.json');
+            try {
+                const response = await fetch('/data.json');
+                if (!response.ok) throw new Error(`Cannot fetch local data: ${response.status}`);
+                const localData = await response.json();
+                state.schools = localData.schools.data;
+                return localData.schools;
+            } catch (fallbackError) {
+                console.error('Error fetching local school data:', fallbackError);
+                throw fallbackError;
+            }
         }
     }
 
     async function fetchTeams() {
         try {
+            // Try API first
             const response = await fetch('/api/teams');
+            if (!response.ok) throw new Error(`Server responded with ${response.status}`);
             const data = await response.json();
             state.teams = data.data;
             return data;
         } catch (error) {
-            console.error('Error fetching teams:', error);
-            throw error;
+            console.error('Error fetching teams from API:', error);
+            
+            // Fallback to local data
+            console.log('Falling back to local data.json');
+            try {
+                const response = await fetch('/data.json');
+                if (!response.ok) throw new Error(`Cannot fetch local data: ${response.status}`);
+                const localData = await response.json();
+                state.teams = localData.teams.data;
+                return localData.teams;
+            } catch (fallbackError) {
+                console.error('Error fetching local team data:', fallbackError);
+                throw fallbackError;
+            }
         }
     }
 
     async function fetchIndividuals() {
         try {
+            // Try API first
             const response = await fetch('/api/individuals');
+            if (!response.ok) throw new Error(`Server responded with ${response.status}`);
             const data = await response.json();
             state.individuals = data.data;
             return data;
         } catch (error) {
-            console.error('Error fetching individuals:', error);
-            throw error;
+            console.error('Error fetching individuals from API:', error);
+            
+            // Fallback to local data
+            console.log('Falling back to local data.json');
+            try {
+                const response = await fetch('/data.json');
+                if (!response.ok) throw new Error(`Cannot fetch local data: ${response.status}`);
+                const localData = await response.json();
+                state.individuals = localData.individuals.data;
+                return localData.individuals;
+            } catch (fallbackError) {
+                console.error('Error fetching local individual data:', fallbackError);
+                throw fallbackError;
+            }
         }
     }
 
@@ -170,6 +259,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Update back button visibility
         backButton.style.display = state.navigationHistory.length > 0 ? 'flex' : 'none';
+        
+        // Set up image fallbacks for all images in the current view
+        setTimeout(setupImageFallbacks, 100); // Small delay to ensure all images are in the DOM
     }
 
     // Schools View
@@ -601,6 +693,31 @@ document.addEventListener('DOMContentLoaded', () => {
     function showLoading(show) {
         loadingSpinner.style.display = show ? 'flex' : 'none';
         contentContainer.style.display = show ? 'none' : 'block';
+    }
+    
+    // Handle image loading errors by providing fallbacks
+    function setupImageFallbacks() {
+        document.querySelectorAll('img').forEach(img => {
+            img.onerror = function() {
+                const alt = this.alt || '';
+                
+                // Determine appropriate fallback based on image type
+                if (alt.includes('School') || this.classList.contains('card-image')) {
+                    this.src = 'https://via.placeholder.com/400x300/00205B/EFBF04?text=School';
+                } else if (alt.includes('Team') || this.classList.contains('team-photo')) {
+                    this.src = 'https://via.placeholder.com/800x500/00205B/EFBF04?text=Team+Photo';
+                } else if (alt.includes('Player') || this.classList.contains('player-image') || this.classList.contains('player-photo')) {
+                    this.src = 'https://via.placeholder.com/300x300/00205B/EFBF04?text=Player';
+                } else if (alt.includes('Athlete') || this.classList.contains('athlete-image') || this.classList.contains('athlete-photo')) {
+                    this.src = 'https://via.placeholder.com/300x300/00205B/EFBF04?text=Athlete';
+                } else {
+                    this.src = 'https://via.placeholder.com/400x300/00205B/EFBF04?text=Saginaw';
+                }
+                
+                // Remove onerror to prevent potential loops
+                this.onerror = null;
+            };
+        });
     }
 
     // Initialize the application

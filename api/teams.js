@@ -40,11 +40,35 @@ module.exports = async (req, res) => {
 
       budibaseRes.on('end', () => {
         try {
+          // Check if data is empty or not valid JSON
+          if (!data || data.trim() === '') {
+            console.error('Empty response from Budibase');
+            res.status(500).json({ 
+              error: 'Empty response from Budibase',
+              data: [] 
+            });
+            return;
+          }
+          
           const parsedData = JSON.parse(data);
+          
+          // Check if the expected structure exists
+          if (!parsedData || !Array.isArray(parsedData) || parsedData.length === 0 || !parsedData[0].data) {
+            console.error('Unexpected response structure from Budibase:', parsedData);
+            res.status(500).json({ 
+              error: 'Unexpected response structure from Budibase',
+              data: [] 
+            });
+            return;
+          }
+          
           res.status(200).json(parsedData[0]);
         } catch (error) {
           console.error('Error parsing response:', error);
-          res.status(500).json({ error: 'Failed to parse response from Budibase' });
+          res.status(500).json({ 
+            error: 'Failed to parse response from Budibase',
+            data: [] 
+          });
         }
       });
     });
