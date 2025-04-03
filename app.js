@@ -130,17 +130,180 @@ document.addEventListener('DOMContentLoaded', () => {
             <rect x="65" y="60" width="10" height="10" fill="#FFFFFF"/>
         </svg>`,
         
-        player: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100%" height="100%" preserveAspectRatio="xMidYMid meet">
-            <circle cx="50" cy="30" r="20" fill="#00205B"/>
-            <path d="M50,50 L50,100 M30,60 L70,60" stroke="#00205B" stroke-width="10" fill="none"/>
-            <path d="M20,100 L40,60 M80,100 L60,60" stroke="#00205B" stroke-width="6" fill="none"/>
+        // Default player silhouette - more natural looking
+        player: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 120" width="100%" height="100%" preserveAspectRatio="xMidYMid meet">
+            <circle cx="50" cy="25" r="15" fill="#00205B"/>
+            <path d="M50,40 L50,75 M30,55 L70,55" stroke="#00205B" stroke-width="8" fill="none"/>
+            <path d="M35,75 L30,110 M65,75 L70,110" stroke="#00205B" stroke-width="5" fill="none"/>
+            <path d="M30,110 L40,110 M60,110 L70,110" stroke="#00205B" stroke-width="5" fill="none"/>
         </svg>`,
         
-        athlete: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100%" height="100%" preserveAspectRatio="xMidYMid meet">
+        // Male default silhouette
+        playerMale: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 120" width="100%" height="100%" preserveAspectRatio="xMidYMid meet">
+            <circle cx="50" cy="22" r="15" fill="#00205B"/>
+            <path d="M40,30 L60,30" stroke="#00205B" stroke-width="3" fill="none"/>
+            <path d="M50,37 L50,75 M35,55 L65,55" stroke="#00205B" stroke-width="8" fill="none"/>
+            <path d="M35,75 L30,110 M65,75 L70,110" stroke="#00205B" stroke-width="5" fill="none"/>
+            <path d="M30,110 L40,110 M60,110 L70,110" stroke="#00205B" stroke-width="5" fill="none"/>
+        </svg>`,
+        
+        // Female default silhouette
+        playerFemale: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 120" width="100%" height="100%" preserveAspectRatio="xMidYMid meet">
+            <circle cx="50" cy="22" r="15" fill="#00205B"/>
+            <path d="M40,20 Q50,10 60,20" stroke="#00205B" stroke-width="3" fill="none"/>
+            <path d="M50,37 L50,75 M35,55 L65,55" stroke="#00205B" stroke-width="7" fill="none"/>
+            <path d="M50,75 Q35,95 30,110 M50,75 Q65,95 70,110" stroke="#00205B" stroke-width="5" fill="none"/>
+            <path d="M30,110 L40,110 M60,110 L70,100" stroke="#00205B" stroke-width="5" fill="none"/>
+        </svg>`,
+        
+        // Basketball player - male
+        basketballMale: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 120" width="100%" height="100%" preserveAspectRatio="xMidYMid meet">
+            <circle cx="50" cy="22" r="15" fill="#00205B"/>
+            <path d="M50,37 L50,65 M35,55 L65,55" stroke="#00205B" stroke-width="8" fill="none"/>
+            <path d="M35,65 L30,100 M65,65 L70,100" stroke="#00205B" stroke-width="5" fill="none"/>
+            <path d="M30,100 L40,110 M60,110 L70,100" stroke="#00205B" stroke-width="5" fill="none"/>
+            <circle cx="80" cy="55" r="10" fill="none" stroke="#EFBF04" stroke-width="2"/>
+            <path d="M80,45 L80,65 M70,55 L90,55" stroke="#EFBF04" stroke-width="2"/>
+        </svg>`,
+        
+        // Basketball player - female
+        basketballFemale: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 120" width="100%" height="100%" preserveAspectRatio="xMidYMid meet">
+            <circle cx="50" cy="22" r="15" fill="#00205B"/>
+            <path d="M40,20 Q50,10 60,20" stroke="#00205B" stroke-width="3" fill="none"/>
+            <path d="M50,37 L50,65 M35,55 L65,55" stroke="#00205B" stroke-width="7" fill="none"/>
+            <path d="M50,65 Q35,85 30,100 M50,65 Q65,85 70,100" stroke="#00205B" stroke-width="5" fill="none"/>
+            <path d="M30,100 L40,110 M60,110 L70,100" stroke="#00205B" stroke-width="5" fill="none"/>
+            <circle cx="80" cy="55" r="10" fill="none" stroke="#EFBF04" stroke-width="2"/>
+            <path d="M80,45 L80,65 M70,55 L90,55" stroke="#EFBF04" stroke-width="2"/>
+        </svg>`,
+        
+        // Football player
+        footballPlayer: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 120" width="100%" height="100%" preserveAspectRatio="xMidYMid meet">
+            <rect x="40" y="12" width="20" height="25" rx="10" fill="#00205B"/>
+            <path d="M35,25 L65,25" stroke="#EFBF04" stroke-width="2"/>
+            <rect x="38" y="37" width="24" height="5" fill="#00205B"/>
+            <path d="M50,42 L50,75 M35,55 L65,55" stroke="#00205B" stroke-width="10" fill="none"/>
+            <path d="M35,75 L30,110 M65,75 L70,110" stroke="#00205B" stroke-width="6" fill="none"/>
+            <path d="M30,110 L40,110 M60,110 L70,110" stroke="#00205B" stroke-width="5" fill="none"/>
+        </svg>`,
+        
+        // Baseball/Softball player - male
+        baseballMale: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 120" width="100%" height="100%" preserveAspectRatio="xMidYMid meet">
+            <circle cx="50" cy="22" r="15" fill="#00205B"/>
+            <path d="M50,37 L50,65 M35,55 L65,55" stroke="#00205B" stroke-width="8" fill="none"/>
+            <path d="M35,65 L30,100 M65,65 L70,100" stroke="#00205B" stroke-width="5" fill="none"/>
+            <path d="M30,100 L40,110 M60,110 L70,100" stroke="#00205B" stroke-width="5" fill="none"/>
+            <path d="M65,55 L90,40" stroke="#EFBF04" stroke-width="3" fill="none"/>
+            <ellipse cx="90" cy="35" rx="5" ry="8" fill="#EFBF04" transform="rotate(-30, 90, 35)"/>
+        </svg>`,
+        
+        // Baseball/Softball player - female
+        baseballFemale: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 120" width="100%" height="100%" preserveAspectRatio="xMidYMid meet">
+            <circle cx="50" cy="22" r="15" fill="#00205B"/>
+            <path d="M40,20 Q50,10 60,20" stroke="#00205B" stroke-width="3" fill="none"/>
+            <path d="M50,37 L50,65 M35,55 L65,55" stroke="#00205B" stroke-width="7" fill="none"/>
+            <path d="M50,65 Q35,85 30,100 M50,65 Q65,85 70,100" stroke="#00205B" stroke-width="5" fill="none"/>
+            <path d="M30,100 L40,110 M60,110 L70,100" stroke="#00205B" stroke-width="5" fill="none"/>
+            <path d="M65,55 L90,40" stroke="#EFBF04" stroke-width="3" fill="none"/>
+            <ellipse cx="90" cy="35" rx="5" ry="8" fill="#EFBF04" transform="rotate(-30, 90, 35)"/>
+        </svg>`,
+        
+        // Soccer player - male
+        soccerMale: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 120" width="100%" height="100%" preserveAspectRatio="xMidYMid meet">
+            <circle cx="50" cy="22" r="15" fill="#00205B"/>
+            <path d="M50,37 L50,65 M35,55 L65,55" stroke="#00205B" stroke-width="8" fill="none"/>
+            <path d="M35,65 L30,100 M65,65 L70,100" stroke="#00205B" stroke-width="5" fill="none"/>
+            <path d="M30,100 L40,110 M60,110 L70,100" stroke="#00205B" stroke-width="5" fill="none"/>
+            <circle cx="85" cy="105" r="8" fill="none" stroke="#EFBF04" stroke-width="2"/>
+            <path d="M81,101 L89,109 M89,101 L81,109" stroke="#EFBF04" stroke-width="1"/>
+        </svg>`,
+        
+        // Soccer player - female
+        soccerFemale: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 120" width="100%" height="100%" preserveAspectRatio="xMidYMid meet">
+            <circle cx="50" cy="22" r="15" fill="#00205B"/>
+            <path d="M40,20 Q50,10 60,20" stroke="#00205B" stroke-width="3" fill="none"/>
+            <path d="M50,37 L50,65 M35,55 L65,55" stroke="#00205B" stroke-width="7" fill="none"/>
+            <path d="M50,65 Q35,85 30,100 M50,65 Q65,85 70,100" stroke="#00205B" stroke-width="5" fill="none"/>
+            <path d="M30,100 L40,110 M60,110 L70,100" stroke="#00205B" stroke-width="5" fill="none"/>
+            <circle cx="85" cy="105" r="8" fill="none" stroke="#EFBF04" stroke-width="2"/>
+            <path d="M81,101 L89,109 M89,101 L81,109" stroke="#EFBF04" stroke-width="1"/>
+        </svg>`,
+        
+        // Track / Cross Country - male
+        trackMale: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 120" width="100%" height="100%" preserveAspectRatio="xMidYMid meet">
+            <circle cx="50" cy="22" r="15" fill="#00205B"/>
+            <path d="M50,37 L60,80 M35,55 L62,45" stroke="#00205B" stroke-width="6" fill="none"/>
+            <path d="M60,80 L70,110 M45,90 L35,110" stroke="#00205B" stroke-width="5" fill="none"/>
+            <path d="M30,110 L40,110 M65,110 L75,110" stroke="#00205B" stroke-width="5" fill="none"/>
+        </svg>`,
+        
+        // Track / Cross Country - female
+        trackFemale: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 120" width="100%" height="100%" preserveAspectRatio="xMidYMid meet">
+            <circle cx="50" cy="22" r="15" fill="#00205B"/>
+            <path d="M40,20 Q50,10 60,20" stroke="#00205B" stroke-width="3" fill="none"/>
+            <path d="M50,37 L60,80 M35,55 L62,45" stroke="#00205B" stroke-width="6" fill="none"/>
+            <path d="M60,80 L70,110 M45,90 L35,110" stroke="#00205B" stroke-width="5" fill="none"/>
+            <path d="M30,110 L40,110 M65,110 L75,110" stroke="#00205B" stroke-width="5" fill="none"/>
+        </svg>`,
+        
+        // Volleyball - female (primary)
+        volleyballFemale: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 120" width="100%" height="100%" preserveAspectRatio="xMidYMid meet">
+            <circle cx="50" cy="22" r="15" fill="#00205B"/>
+            <path d="M40,20 Q50,10 60,20" stroke="#00205B" stroke-width="3" fill="none"/>
+            <path d="M50,37 L50,60 M35,48 L65,48" stroke="#00205B" stroke-width="7" fill="none"/>
+            <path d="M50,60 Q35,80 30,100 M50,60 Q65,80 70,100" stroke="#00205B" stroke-width="5" fill="none"/>
+            <path d="M30,100 L40,110 M60,110 L70,100" stroke="#00205B" stroke-width="5" fill="none"/>
+            <circle cx="75" cy="40" r="10" fill="none" stroke="#EFBF04" stroke-width="2"/>
+            <path d="M70,35 L80,45 M80,35 L70,45" stroke="#EFBF04" stroke-width="1"/>
+        </svg>`,
+        
+        // Volleyball - male
+        volleyballMale: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 120" width="100%" height="100%" preserveAspectRatio="xMidYMid meet">
+            <circle cx="50" cy="22" r="15" fill="#00205B"/>
+            <path d="M50,37 L50,60 M35,48 L65,48" stroke="#00205B" stroke-width="8" fill="none"/>
+            <path d="M35,60 L30,100 M65,60 L70,100" stroke="#00205B" stroke-width="5" fill="none"/>
+            <path d="M30,100 L40,110 M60,110 L70,100" stroke="#00205B" stroke-width="5" fill="none"/>
+            <circle cx="75" cy="40" r="10" fill="none" stroke="#EFBF04" stroke-width="2"/>
+            <path d="M70,35 L80,45 M80,35 L70,45" stroke="#EFBF04" stroke-width="1"/>
+        </svg>`,
+        
+        // Wrestling - primary male
+        wrestlingPlayer: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 120" width="100%" height="100%" preserveAspectRatio="xMidYMid meet">
+            <circle cx="50" cy="22" r="15" fill="#00205B"/>
+            <path d="M45,22 L55,22" stroke="#EFBF04" stroke-width="2"/>
+            <path d="M50,37 L50,60 M32,48 L68,48" stroke="#00205B" stroke-width="10" fill="none"/>
+            <path d="M32,60 L30,100 M68,60 L70,100" stroke="#00205B" stroke-width="8" fill="none"/>
+            <path d="M30,100 L40,110 M60,110 L70,100" stroke="#00205B" stroke-width="6" fill="none"/>
+        </svg>`,
+        
+        // Swimming - male
+        swimmingMale: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 120" width="100%" height="100%" preserveAspectRatio="xMidYMid meet">
+            <circle cx="50" cy="22" r="15" fill="#00205B"/>
+            <path d="M50,37 L50,75 M30,60 L70,60" stroke="#00205B" stroke-width="8" fill="none"/>
+            <path d="M30,60 L20,45 M70,60 L80,45" stroke="#00205B" stroke-width="5" fill="none"/>
+            <path d="M35,75 L30,100 M65,75 L70,100" stroke="#00205B" stroke-width="5" fill="none"/>
+            <path d="M30,100 L40,110 M60,110 L70,100" stroke="#00205B" stroke-width="5" fill="none"/>
+            <path d="M35,35 L65,35" stroke="#EFBF04" stroke-width="2"/>
+        </svg>`,
+        
+        // Swimming - female
+        swimmingFemale: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 120" width="100%" height="100%" preserveAspectRatio="xMidYMid meet">
+            <circle cx="50" cy="22" r="15" fill="#00205B"/>
+            <path d="M40,20 Q50,10 60,20" stroke="#00205B" stroke-width="3" fill="none"/>
+            <path d="M50,37 L50,75 M30,60 L70,60" stroke="#00205B" stroke-width="7" fill="none"/>
+            <path d="M30,60 L20,45 M70,60 L80,45" stroke="#00205B" stroke-width="5" fill="none"/>
+            <path d="M50,75 Q35,85 30,100 M50,75 Q65,85 70,100" stroke="#00205B" stroke-width="5" fill="none"/>
+            <path d="M30,100 L40,110 M60,110 L70,100" stroke="#00205B" stroke-width="5" fill="none"/>
+            <path d="M35,35 L65,35" stroke="#EFBF04" stroke-width="2"/>
+        </svg>`,
+        
+        athlete: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 120" width="100%" height="100%" preserveAspectRatio="xMidYMid meet">
             <circle cx="50" cy="25" r="15" fill="#00205B"/>
             <path d="M50,40 L50,80 M30,55 L70,55" stroke="#00205B" stroke-width="8" fill="none"/>
             <path d="M25,95 L40,55 M75,95 L60,55" stroke="#00205B" stroke-width="5" fill="none"/>
-            <circle cx="50" cy="15" r="5" fill="#EFBF04"/>
+            <path d="M25,95 L30,110 M75,95 L70,110" stroke="#00205B" stroke-width="4" fill="none"/>
+            <circle cx="65" cy="15" r="8" fill="#EFBF04"/>
+            <path d="M65,10 L65,20 M60,15 L70,15" stroke="#00205B" stroke-width="2"/>
         </svg>`,
         
         team: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100%" height="100%" preserveAspectRatio="xMidYMid meet">
@@ -151,6 +314,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <path d="M50,30 L50,70 M40,45 L60,45" stroke="#00205B" stroke-width="5" fill="none"/>
             <path d="M70,35 L70,70 M60,45 L80,45" stroke="#00205B" stroke-width="5" fill="none"/>
             <rect x="15" y="70" width="70" height="10" fill="#EFBF04"/>
+            <path d="M50,70 L50,80" stroke="#00205B" stroke-width="1"/>
         </svg>`,
         
         trophy: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100%" height="100%" preserveAspectRatio="xMidYMid meet">
@@ -398,7 +562,30 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Helper for updating theme based on school colors
     function updateThemeColors(school) {
-        if (!school) return;
+        // Reset to defaults if no school is selected
+        if (!school) {
+            document.documentElement.style.setProperty('--primary-color', '#00205B');
+            document.documentElement.style.setProperty('--secondary-color', '#EFBF04');
+            
+            const header = document.querySelector('header');
+            if (header) header.style.backgroundColor = '';
+            
+            const navButtons = document.querySelectorAll('.nav-button');
+            navButtons.forEach(button => button.style.borderColor = '');
+            
+            document.body.style.background = '';
+            
+            const viewTitle = document.querySelector('.view-title');
+            if (viewTitle) {
+                viewTitle.style.color = '';
+                viewTitle.style.borderBottomColor = '';
+            }
+            return;
+        }
+        
+        // Update CSS variables for the whole site
+        document.documentElement.style.setProperty('--primary-color', school.primary_color || '#00205B');
+        document.documentElement.style.setProperty('--secondary-color', school.secondary_color || '#EFBF04');
         
         // Update header colors
         const header = document.querySelector('header');
@@ -420,6 +607,18 @@ document.addEventListener('DOMContentLoaded', () => {
         if (viewTitle) {
             viewTitle.style.color = school.primary_color || '#00205B';
             viewTitle.style.borderBottomColor = school.secondary_color || '#EFBF04';
+        }
+    }
+
+    // Helper function to handle grid item count for proper centering
+    function handleFewGridItems(grid, items) {
+        if (!grid) return;
+        
+        // If there are 2 or fewer items, add the 'few-items' class
+        if (items.length <= 2) {
+            grid.classList.add('few-items');
+        } else {
+            grid.classList.remove('few-items');
         }
     }
 
@@ -512,6 +711,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const schoolCard = createSchoolCard(school);
             schoolsGrid.appendChild(schoolCard);
         });
+        
+        // Handle grid with few items
+        handleFewGridItems(schoolsGrid, state.schools);
 
         contentContainer.appendChild(clone);
     }
@@ -605,6 +807,9 @@ document.addEventListener('DOMContentLoaded', () => {
             sportsGrid.appendChild(sportCard);
         });
         
+        // Handle grid with few items
+        handleFewGridItems(sportsGrid, sports);
+        
         contentContainer.appendChild(clone);
     }
 
@@ -654,6 +859,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const yearCard = createYearCard(team);
             yearsGrid.appendChild(yearCard);
         });
+        
+        // Handle grid with few items
+        handleFewGridItems(yearsGrid, teams);
         
         contentContainer.appendChild(clone);
     }
@@ -721,7 +929,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <h3>Championship Trophy</h3>
                 <div class="trophy-model-container">
                     <button class="expand-trophy-btn"><i class="fas fa-expand"></i></button>
-                    <iframe class="trophy-model" src="${state.selectedTeam.trophy_model_url}" frameborder="0"></iframe>
+                    <iframe class="trophy-model" src="https://modelviewer.dev/shared/glft-viewer.html#load=${encodeURIComponent(state.selectedTeam.trophy_model_url)}" frameborder="0" allowfullscreen></iframe>
                 </div>
             `;
             
@@ -730,7 +938,7 @@ document.addEventListener('DOMContentLoaded', () => {
             expandBtn.addEventListener('click', () => {
                 const trophyModal = document.querySelector('.trophy-modal');
                 const modalIframe = trophyModal.querySelector('.modal-trophy-model');
-                modalIframe.src = state.selectedTeam.trophy_model_url;
+                modalIframe.src = `https://modelviewer.dev/shared/glft-viewer.html#load=${encodeURIComponent(state.selectedTeam.trophy_model_url)}`;
                 trophyModal.style.display = 'flex';
             });
         } else {
@@ -758,6 +966,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const playerCard = createPlayerCard(player);
             rosterGrid.appendChild(playerCard);
         });
+        
+        // Handle grid with few items
+        handleFewGridItems(rosterGrid, players);
         
         contentContainer.appendChild(clone);
     }
@@ -905,6 +1116,9 @@ document.addEventListener('DOMContentLoaded', () => {
             athletesGrid.appendChild(athleteCard);
         });
         
+        // Handle grid with few items
+        handleFewGridItems(athletesGrid, athletes);
+        
         contentContainer.appendChild(clone);
     }
 
@@ -1039,7 +1253,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 } else if (alt.includes('Player') || this.classList.contains('player-image') || this.classList.contains('player-photo')) {
                     if (!parentElement.querySelector('svg')) {
-                        parentElement.innerHTML += svgFallbacks.player;
+                        // Choose sport-specific silhouette if possible
+                        const sportSpecificSVG = getSportSpecificPlayerSVG();
+                        parentElement.innerHTML += sportSpecificSVG;
                     }
                 } else if (alt.includes('Athlete') || this.classList.contains('athlete-image') || this.classList.contains('athlete-photo')) {
                     if (!parentElement.querySelector('svg')) {
@@ -1055,6 +1271,42 @@ document.addEventListener('DOMContentLoaded', () => {
                 this.onerror = null;
             };
         });
+    }
+
+    // Helper function to get sport-specific player SVG
+    function getSportSpecificPlayerSVG() {
+        // Default to generic player
+        if (!state.selectedSport) return svgFallbacks.player;
+        
+        const sportName = state.selectedSport.toLowerCase();
+        
+        // Check if it's a women's/girls team to determine gender
+        const isFemale = sportName.includes('women') || 
+                        sportName.includes('girls') || 
+                        sportName.includes('female') ||
+                        sportName.includes('volleyball'); // Default volleyball to female
+                        
+        // Now determine which sport
+        if (sportName.includes('basketball')) {
+            return isFemale ? svgFallbacks.basketballFemale : svgFallbacks.basketballMale;
+        } else if (sportName.includes('football')) {
+            return svgFallbacks.footballPlayer;
+        } else if (sportName.includes('baseball') || sportName.includes('softball')) {
+            return isFemale ? svgFallbacks.baseballFemale : svgFallbacks.baseballMale;
+        } else if (sportName.includes('soccer')) {
+            return isFemale ? svgFallbacks.soccerFemale : svgFallbacks.soccerMale;
+        } else if (sportName.includes('track') || sportName.includes('cross country')) {
+            return isFemale ? svgFallbacks.trackFemale : svgFallbacks.trackMale;
+        } else if (sportName.includes('volleyball')) {
+            return isFemale ? svgFallbacks.volleyballFemale : svgFallbacks.volleyballMale;
+        } else if (sportName.includes('wrestling')) {
+            return svgFallbacks.wrestlingPlayer;
+        } else if (sportName.includes('swim')) {
+            return isFemale ? svgFallbacks.swimmingFemale : svgFallbacks.swimmingMale;
+        }
+        
+        // If no specific sport match, use general gender-based silhouette
+        return isFemale ? svgFallbacks.playerFemale : svgFallbacks.playerMale;
     }
 
     // Initialize the application
