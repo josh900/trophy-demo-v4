@@ -17,7 +17,9 @@ module.exports = async (req, res) => {
       return;
     }
 
-    // Define request options
+    // Assemble request options for Budibase
+    const postData = JSON.stringify({});
+    
     const options = {
       hostname: 'budibase.skoop.digital',
       path: '/api/public/v1/queries/query_datasource_plus_56025c99333e46b8a073e70585159c4c_4a3b9f6c024c4381afcf9f4e83f85f7d',
@@ -26,62 +28,82 @@ module.exports = async (req, res) => {
         'x-budibase-app-id': 'app_3ea495f0892c4311badfd934783afd94',
         'Content-Type': 'application/json',
         'Accept': 'application/json',
+        'Content-Length': Buffer.byteLength(postData),
         'x-budibase-api-key': '69b1bc10c2d32ee607e44e4a30f7f5ea-b9dd09ff6c773a4628f737a0ab45f9e0304e6a8c85181a90f8ff74cc29c946528f373cc83f24ae20'
       }
     };
 
-    // Send the request to Budibase
-    const budibaseReq = https.request(options, (budibaseRes) => {
-      let data = '';
+    // Create promise for HTTP request
+    const getSchoolsData = () => {
+      return new Promise((resolve, reject) => {
+        const budibaseReq = https.request(options, (budibaseRes) => {
+          let responseData = '';
 
-      budibaseRes.on('data', (chunk) => {
-        data += chunk;
-      });
-
-      budibaseRes.on('end', () => {
-        try {
-          // Check if data is empty or not valid JSON
-          if (!data || data.trim() === '') {
-            console.error('Empty response from Budibase');
-            res.status(500).json({ 
-              error: 'Empty response from Budibase',
-              data: [] 
-            });
-            return;
-          }
-          
-          const parsedData = JSON.parse(data);
-          
-          // Check if the expected structure exists
-          if (!parsedData || !Array.isArray(parsedData) || parsedData.length === 0 || !parsedData[0].data) {
-            console.error('Unexpected response structure from Budibase:', parsedData);
-            res.status(500).json({ 
-              error: 'Unexpected response structure from Budibase',
-              data: [] 
-            });
-            return;
-          }
-          
-          res.status(200).json(parsedData[0]);
-        } catch (error) {
-          console.error('Error parsing response:', error);
-          res.status(500).json({ 
-            error: 'Failed to parse response from Budibase',
-            data: [] 
+          budibaseRes.on('data', (chunk) => {
+            responseData += chunk;
           });
-        }
+
+          budibaseRes.on('end', () => {
+            // Check if the status code indicates an error
+            if (budibaseRes.statusCode >= 400) {
+              reject(new Error(`Budibase server responded with status code: ${budibaseRes.statusCode}`));
+              return;
+            }
+
+            try {
+              // Check for empty response
+              if (!responseData || responseData.trim() === '') {
+                reject(new Error('Empty response received from Budibase'));
+                return;
+              }
+
+              const parsedData = JSON.parse(responseData);
+              
+              // Check for expected data structure
+              if (!Array.isArray(parsedData) || parsedData.length === 0) {
+                reject(new Error('Invalid data structure received from Budibase'));
+                return;
+              }
+
+              resolve(parsedData[0]);
+            } catch (error) {
+              reject(new Error(`Failed to parse Budibase response: ${error.message}`));
+            }
+          });
+        });
+
+        budibaseReq.on('error', (error) => {
+          reject(new Error(`Request to Budibase failed: ${error.message}`));
+        });
+
+        // Write data to request body and end the request
+        budibaseReq.write(postData);
+        budibaseReq.end();
       });
-    });
+    };
 
-    budibaseReq.on('error', (error) => {
-      console.error('Error making request to Budibase:', error);
-      res.status(500).json({ error: 'Failed to fetch data from Budibase' });
-    });
-
-    budibaseReq.write(JSON.stringify({}));
-    budibaseReq.end();
+    // Execute the promise
+    try {
+      const schoolsData = await getSchoolsData();
+      
+      // Ensure the data field exists, even if empty
+      if (!schoolsData.data) {
+        schoolsData.data = [];
+      }
+      
+      res.status(200).json(schoolsData);
+    } catch (error) {
+      console.error('API Error:', error.message);
+      res.status(500).json({ 
+        error: `Failed to fetch schools data: ${error.message}`,
+        data: [] // Ensure data field exists even in error response
+      });
+    }
   } catch (error) {
     console.error('Unexpected error:', error);
-    res.status(500).json({ error: 'An unexpected error occurred' });
+    res.status(500).json({ 
+      error: `An unexpected error occurred: ${error.message}`,
+      data: [] // Ensure data field exists even in error response
+    });
   }
 };

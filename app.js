@@ -42,144 +42,124 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Load data and render initial view
         showLoading(true);
+        
+        // Set up loading states
+        let schoolsLoaded = false;
+        let teamsLoaded = false;
+        let individualsLoaded = false;
+        
         try {
-            // Load each data set independently to avoid one failure stopping everything
-            try {
-                await fetchSchools();
-            } catch (schoolsError) {
-                console.error('Failed to load schools data:', schoolsError);
-                // If schools data couldn't be loaded at all, we'll use empty array as fallback
-                if (!state.schools || !state.schools.length) {
-                    state.schools = [];
-                    console.warn('Using empty array for schools');
-                }
-            }
-            
-            try {
-                await fetchTeams();
-            } catch (teamsError) {
-                console.error('Failed to load teams data:', teamsError);
-                if (!state.teams || !state.teams.length) {
-                    state.teams = [];
-                    console.warn('Using empty array for teams');
-                }
-            }
-            
-            try {
-                await fetchIndividuals();
-            } catch (individualsError) {
-                console.error('Failed to load individuals data:', individualsError);
-                if (!state.individuals || !state.individuals.length) {
-                    state.individuals = [];
-                    console.warn('Using empty array for individuals');
-                }
-            }
-
-            // Check if we have any schools data to display
-            if (state.schools.length > 0) {
-                renderView('schools');
-            } else {
-                // No school data available, show error message
-                contentContainer.innerHTML = `
-                    <div class="error-container">
-                        <h2>Data Loading Error</h2>
-                        <p>We're unable to load the trophy case data at this time.</p>
-                        <p>Please try refreshing the page or contact support if the issue persists.</p>
-                        <button class="btn" onclick="location.reload()">Refresh Page</button>
-                    </div>
-                `;
-            }
+            // Try to load schools data
+            await fetchSchools();
+            schoolsLoaded = true;
         } catch (error) {
-            console.error('Critical error initializing application:', error);
+            console.error('Error loading schools data:', error);
+            // Initialize with empty array if fetch fails
+            state.schools = [];
+        }
+        
+        try {
+            // Try to load teams data
+            await fetchTeams();
+            teamsLoaded = true;
+        } catch (error) {
+            console.error('Error loading teams data:', error);
+            // Initialize with empty array if fetch fails
+            state.teams = [];
+        }
+        
+        try {
+            // Try to load individuals data
+            await fetchIndividuals();
+            individualsLoaded = true;
+        } catch (error) {
+            console.error('Error loading individuals data:', error);
+            // Initialize with empty array if fetch fails
+            state.individuals = [];
+        }
+        
+        showLoading(false);
+        
+        // If all data failed to load, show error message
+        if (!schoolsLoaded && !teamsLoaded && !individualsLoaded) {
             contentContainer.innerHTML = `
                 <div class="error-container">
-                    <h2>Application Error</h2>
-                    <p>Something went wrong while loading the application.</p>
-                    <p>Technical details: ${error.message}</p>
-                    <button class="btn" onclick="location.reload()">Refresh Page</button>
+                    <h2>Connection Error</h2>
+                    <p>We're unable to connect to the data servers at this time.</p>
+                    <p>Please check your internet connection and try again later.</p>
+                    <button class="btn" onclick="location.reload()">Refresh</button>
                 </div>
             `;
-        } finally {
-            showLoading(false);
+            return;
         }
+        
+        // If some data loaded but not schools, show a limited error message
+        if (!schoolsLoaded) {
+            contentContainer.innerHTML = `
+                <div class="error-container">
+                    <h2>School Data Unavailable</h2>
+                    <p>We're unable to load school information at this time.</p>
+                    <p>Some features may be limited until connectivity is restored.</p>
+                    <button class="btn" onclick="location.reload()">Refresh</button>
+                </div>
+            `;
+            return;
+        }
+        
+        // If schools loaded but we have no data, show empty state
+        if (state.schools.length === 0) {
+            contentContainer.innerHTML = `
+                <div class="error-container">
+                    <h2>No Schools Available</h2>
+                    <p>There are currently no schools in the database.</p>
+                    <p>Please contact the administrator to add school data.</p>
+                    <button class="btn" onclick="location.reload()">Refresh</button>
+                </div>
+            `;
+            return;
+        }
+        
+        // If we have schools data, render the schools view
+        renderView('schools');
     }
 
-    // Data Fetching Functions with Fallback
+    // Data Fetching Functions
     async function fetchSchools() {
         try {
-            // Try API first
             const response = await fetch('/api/schools');
             if (!response.ok) throw new Error(`Server responded with ${response.status}`);
             const data = await response.json();
-            state.schools = data.data;
+            state.schools = data.data || [];
             return data;
         } catch (error) {
-            console.error('Error fetching schools from API:', error);
-            
-            // Fallback to local data
-            console.log('Falling back to local data.json');
-            try {
-                const response = await fetch('/data.json');
-                if (!response.ok) throw new Error(`Cannot fetch local data: ${response.status}`);
-                const localData = await response.json();
-                state.schools = localData.schools.data;
-                return localData.schools;
-            } catch (fallbackError) {
-                console.error('Error fetching local school data:', fallbackError);
-                throw fallbackError;
-            }
+            console.error('Error fetching schools:', error);
+            throw error;
         }
     }
 
     async function fetchTeams() {
         try {
-            // Try API first
             const response = await fetch('/api/teams');
             if (!response.ok) throw new Error(`Server responded with ${response.status}`);
             const data = await response.json();
-            state.teams = data.data;
+            state.teams = data.data || [];
             return data;
         } catch (error) {
-            console.error('Error fetching teams from API:', error);
-            
-            // Fallback to local data
-            console.log('Falling back to local data.json');
-            try {
-                const response = await fetch('/data.json');
-                if (!response.ok) throw new Error(`Cannot fetch local data: ${response.status}`);
-                const localData = await response.json();
-                state.teams = localData.teams.data;
-                return localData.teams;
-            } catch (fallbackError) {
-                console.error('Error fetching local team data:', fallbackError);
-                throw fallbackError;
-            }
+            console.error('Error fetching teams:', error);
+            throw error;
         }
     }
 
     async function fetchIndividuals() {
         try {
-            // Try API first
             const response = await fetch('/api/individuals');
             if (!response.ok) throw new Error(`Server responded with ${response.status}`);
             const data = await response.json();
-            state.individuals = data.data;
+            state.individuals = data.data || [];
             return data;
         } catch (error) {
-            console.error('Error fetching individuals from API:', error);
-            
-            // Fallback to local data
-            console.log('Falling back to local data.json');
-            try {
-                const response = await fetch('/data.json');
-                if (!response.ok) throw new Error(`Cannot fetch local data: ${response.status}`);
-                const localData = await response.json();
-                state.individuals = localData.individuals.data;
-                return localData.individuals;
-            } catch (fallbackError) {
-                console.error('Error fetching local individual data:', fallbackError);
-                throw fallbackError;
-            }
+            console.error('Error fetching individuals:', error);
+            throw error;
         }
     }
 
