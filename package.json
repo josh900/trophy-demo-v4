@@ -1,8 +1,25 @@
 {
     "name": "saginaw-trophy-case",
     "version": "1.0.0",
-    "private": true,
+    "description": "Digital trophy case application for Saginaw schools",
+    "main": "index.html",
+    "scripts": {
+      "start": "serve",
+      "dev": "serve"
+    },
+    "keywords": [
+      "saginaw",
+      "trophy",
+      "digital-signage",
+      "sports"
+    ],
+    "author": "",
+    "license": "ISC",
+    "dependencies": {},
+    "devDependencies": {
+      "serve": "^14.2.1"
+    },
     "engines": {
-        "node": ">=14.0.0"
+      "node": ">=14.0.0"
     }
-}
+  }
