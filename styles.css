@@ -24,6 +24,7 @@ body {
     min-height: 100vh;
     display: flex;
     flex-direction: column;
+    transition: background var(--transition-speed);
 }
 
 /* Header Styles */
@@ -38,6 +39,7 @@ header {
     position: sticky;
     top: 0;
     z-index: 100;
+    transition: background-color var(--transition-speed);
 }
 
 .logo {
@@ -59,6 +61,8 @@ header h1 {
 #main-nav {
     display: flex;
     gap: 10px;
+    justify-content: flex-end; /* Always right-align buttons */
+    min-width: 150px; /* Ensure minimum width for the nav container */
 }
 
 .nav-button {
@@ -71,7 +75,8 @@ header h1 {
     display: flex;
     align-items: center;
     gap: 5px;
-    transition: background-color var(--transition-speed);
+    transition: all var(--transition-speed);
+    white-space: nowrap;
 }
 
 .nav-button:hover {
@@ -245,6 +250,7 @@ main {
     flex-direction: column;
     align-items: center;
     justify-content: center;
+    position: relative;
 }
 
 .trophy-placeholder {
@@ -259,12 +265,98 @@ main {
     padding: 20px;
     text-align: center;
     box-shadow: inset 0 0 10px var(--shadow-color);
+    transition: all var(--transition-speed);
 }
 
 .trophy-placeholder i {
     font-size: 4rem;
     color: var(--secondary-color);
     margin-bottom: 10px;
+}
+
+.trophy-model-container {
+    width: 100%;
+    height: 300px;
+    position: relative;
+    border-radius: 8px;
+    overflow: hidden;
+    background-color: var(--background-light);
+    box-shadow: 0 4px 8px var(--shadow-color);
+}
+
+.trophy-model {
+    width: 100%;
+    height: 100%;
+    border: none;
+}
+
+.expand-trophy-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background-color: var(--primary-color);
+    color: var(--text-light);
+    border: none;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    z-index: 10;
+    transition: all var(--transition-speed);
+}
+
+.expand-trophy-btn:hover {
+    background-color: var(--secondary-color);
+    color: var(--accent-color);
+}
+
+.trophy-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.trophy-modal-content {
+    width: 90%;
+    height: 90%;
+    max-width: 800px;
+    background-color: var(--background-light);
+    border-radius: 10px;
+    position: relative;
+    padding: 20px;
+}
+
+.close-modal-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background-color: var(--accent-color);
+    color: var(--text-light);
+    border: none;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    z-index: 10;
+}
+
+.modal-trophy-model {
+    width: 100%;
+    height: 100%;
+    border: none;
 }
 
 .team-roster h3 {
@@ -510,6 +602,11 @@ footer {
     
     .player-info, .athlete-info {
         text-align: center;
+    }
+    
+    .nav-button {
+        flex: 1;
+        justify-content: center;
     }
 }
 
