@@ -118,10 +118,18 @@ main {
 .player-grid,
 .athletes-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    /* Let auto-fill determine columns, but set a sensible max */
+    /* Max width = (max card width + gap) * number of columns + padding */
+    /* Example: (350px + 20px) * 3 columns = 1110px. Adjust as needed. */
+    /* grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); */
+    /* Simpler approach: Define columns explicitly for common sizes */
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); 
     gap: 20px;
-    justify-content: center; /* Center items horizontally */
-    padding: 0 10px; /* Add padding to prevent touching edges */
+    justify-items: center; /* Center items within their grid cell tracks */
+    /* Remove justify-content: center; handled by justify-items and grid structure */
+    padding: 0 10px; 
+    max-width: 1150px; /* Limit max width of the grid itself */
+    margin: 0 auto; /* Center the grid container within its parent */
 }
 
 .card,
@@ -133,10 +141,10 @@ main {
     box-shadow: 0 4px 8px var(--shadow-color);
     transition: transform var(--transition-speed), box-shadow var(--transition-speed);
     cursor: pointer;
-    border: 1px solid transparent; /* For school color border */
-    max-width: 350px; /* Prevent cards from becoming too wide */
-    justify-self: center; /* Center card within its grid cell */
-    width: 100%; /* Allow card to fill its cell up to max-width */
+    border: 1px solid transparent; 
+    max-width: 350px; 
+    /* justify-self: center; /* Let justify-items on grid handle centering */
+    width: 100%; /* Allow card to fill its cell */
 }
 
 .card:hover {
@@ -164,6 +172,7 @@ main {
     max-width: 100px;
     max-height: 100px;
     object-fit: contain;
+    fill: currentColor; /* Use text color for icons inside */
 }
 
 .card-image {
@@ -427,23 +436,28 @@ main {
     width: 150px;
     height: 150px;
     border-radius: 50%;
-    overflow: hidden;
+    overflow: hidden; /* Ensure overflow is hidden */
     border: 3px solid var(--secondary-color);
-    background-color: var(--background-light); /* Background for contain */
+    background-color: var(--background-light); 
+    display: flex; /* Use flex to center SVG fallback */
+    justify-content: center;
+    align-items: center;
 }
 
 .player-photo,
 .athlete-photo {
+    display: block; /* Ensure image is block */
     width: 100%;
     height: 100%;
-    object-fit: contain; /* Changed from cover to contain */
+    object-fit: contain; /* Definitely contain */
 }
 
 .player-media svg,
 .athlete-media svg {
-    width: 90%;
-    height: 90%;
+    width: 70%; /* Slightly smaller SVG */
+    height: 70%;
     object-fit: contain;
+    fill: var(--primary-color); /* Ensure SVG uses theme color */
 }
 
 .player-name {
@@ -517,9 +531,12 @@ main {
     width: 150px;
     height: 150px;
     border-radius: 8px;
-    overflow: hidden;
+    overflow: hidden; /* Ensure overflow is hidden */
     border: 3px solid var(--secondary-color);
-    background-color: var(--background-light); /* Background for contain */
+    background-color: var(--background-light); 
+    display: flex; /* Use flex to center SVG fallback */
+    justify-content: center;
+    align-items: center;
 }
 
 .athlete-name {
@@ -612,6 +629,14 @@ footer {
 }
 
 /* Responsive Styles */
+@media (max-width: 900px) { /* Adjust breakpoint for fewer columns */
+    .card-grid,
+    .player-grid,
+    .athletes-grid {
+        max-width: 750px; /* Max width for ~2 columns */
+    }
+}
+
 @media (max-width: 768px) {
     header {
         flex-direction: column;
@@ -631,7 +656,9 @@ footer {
     .card-grid,
     .player-grid,
     .athletes-grid {
-        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); /* Adjust min size */
+        /* Ensure it uses auto-fit for responsiveness */
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); /* Smaller min size */
+        max-width: none; /* Remove max-width for smaller screens */
     }
     
     .team-content, .player-header, .athlete-header {
