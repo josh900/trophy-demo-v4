@@ -147,22 +147,22 @@ document.addEventListener('DOMContentLoaded', () => {
         // Add others if specific SVG elements are created
     };
 
-    // Simple SVG paths/elements for sport overlays (using secondary color)
-    const sportSvgElements = {
-        basketball: '<circle cx="75" cy="75" r="10" fill="var(--secondary-color, #EFBF04)"/>',
-        football: '<ellipse cx="75" cy="75" rx="12" ry="8" fill="var(--secondary-color, #EFBF04)"/>',
-        baseball: '<circle cx="75" cy="75" r="8" fill="var(--secondary-color, #EFBF04)"><path d="M70,72 L75,77 M80,72 L75,77" stroke="#FFF" stroke-width="1"/></circle>',
-        soccer: '<circle cx="75" cy="75" r="10" fill="none" stroke="var(--secondary-color, #EFBF04)" stroke-width="2"/><path d="M75,65 L75,85 M65,75 L85,75 M68,68 L82,82 M68,82 L82,68" stroke="var(--secondary-color, #EFBF04)" stroke-width="1"/>',
-        volleyball: '<circle cx="75" cy="75" r="10" fill="var(--secondary-color, #EFBF04)"><path d="M70,70 Q75,65 80,70 M70,80 Q75,85 80,80" fill="none" stroke="#FFF" stroke-width="1"/></circle>',
-        track: '<path d="M65,70 L75,80 L85,70" stroke="var(--secondary-color, #EFBF04)" stroke-width="2" fill="none"/>', // Simple arrow/chevron
-        wrestling: '<path d="M65,70 Q75,65 85,70 M65,80 Q75,85 85,80" stroke="var(--secondary-color, #EFBF04)" stroke-width="2" fill="none"/>', // Simple curves
-        swimming: '<path d="M65,72 Q75,70 85,72 M65,78 Q75,80 85,78" stroke="var(--secondary-color, #EFBF04)" stroke-width="2" fill="none"/>', // Simple waves
-        hockey: '<path d="M65,70 L85,70 L75,85 Z" fill="var(--secondary-color, #EFBF04)"/>', // Simple stick shape
-        golf: '<circle cx="75" cy="75" r="5" fill="var(--secondary-color, #EFBF04)"/>',
-        tennis: '<circle cx="75" cy="75" r="8" fill="var(--secondary-color, #EFBF04)"/><line x1="70" y1="70" x2="80" y2="80" stroke="#FFF" stroke-width="1"/><line x1="70" y1="80" x2="80" y2="70" stroke="#FFF" stroke-width="1"/>',
-        lacrosse: '<path d="M65,70 L85,70 L75,85 Z" fill="var(--secondary-color, #EFBF04)"/>', // Reuse hockey stick
-        cheer: '<path d="M65,70 L70,85 L75,70 L80,85 L85,70" stroke="var(--secondary-color, #EFBF04)" stroke-width="2" fill="none"/>', // Pom-pom like
-        bowling: '<circle cx="75" cy="75" r="10" fill="var(--secondary-color, #EFBF04)"><circle cx="72" cy="72" r="2" fill="#FFF"/><circle cx="78" cy="72" r="2" fill="#FFF"/><circle cx="75" cy="78" r="2" fill="#FFF"/></circle>'
+    // SVG Elements for Sport Overlays (Positioned for the base silhouettes below)
+    const sportSvgOverlays = {
+        basketball: '<circle cx="78" cy="80" r="12" fill="var(--secondary-color, #EFBF04)"/><path d="M70,75 Q78,70 86,75 M70,85 Q78,90 86,85 M73,72 V 88 M83,72 V 88" stroke="var(--primary-color, #00205B)" stroke-width="1" fill="none"/>',
+        football: '<path d="M70,65 Q75,60 80,65 L85,75 Q75,85 65,75 Z M70,73 H 80" fill="none" stroke="var(--secondary-color, #EFBF04)" stroke-width="3"/><line x1="75" y1="70" x2="75" y2="80" stroke="var(--secondary-color, #EFBF04)" stroke-width="2"/>', // Simplified helmet shape
+        baseball: '<rect x="65" y="65" width="5" height="25" transform="rotate(-45 70 77.5)" fill="var(--secondary-color, #EFBF04)"/><circle cx="80" cy="80" r="5" fill="var(--secondary-color, #EFBF04)"/>', // Bat and ball
+        soccer: '<circle cx="78" cy="80" r="12" fill="none" stroke="var(--secondary-color, #EFBF04)" stroke-width="2"/><path d="M78,68 L78,92 M66,80 L90,80 M69,71 L87,89 M69,89 L87,71" stroke="var(--secondary-color, #EFBF04)" stroke-width="1.5"/>', // Soccer ball pattern
+        volleyball: '<circle cx="78" cy="80" r="12" fill="var(--secondary-color, #EFBF04)"/><path d="M70,75 Q78,70 86,75 M70,85 Q78,90 86,85 M78,70 V 90" fill="none" stroke="var(--primary-color, #00205B)" stroke-width="1"/>',
+        track: '<path d="M65,70 L75,85 L80,75 L85,85 L90,70" stroke="var(--secondary-color, #EFBF04)" stroke-width="3" fill="none"/>', // Running/shoe sole mark
+        wrestling: '<path d="M65,70 C70,65 80,65 85,70 C90,75 80,85 75,85 C70,85 60,75 65,70 Z" fill="none" stroke="var(--secondary-color, #EFBF04)" stroke-width="3"/>', // Interlocking shape
+        swimming: '<path d="M65,72 Q75,68 85,72 T65,82 Q75,86 85,82" stroke="var(--secondary-color, #EFBF04)" stroke-width="3" fill="none"/>', // Waves
+        hockey: '<path d="M65,65 L85,75 M65,85 L85,75 L65,65 L65,85" stroke="var(--secondary-color, #EFBF04)" stroke-width="3" fill="none"/>', // Stick
+        golf: '<path d="M75,65 L75,85 M70,85 L80,85" stroke="var(--secondary-color, #EFBF04)" stroke-width="3"/><circle cx="75" cy="60" r="4" fill="var(--secondary-color, #EFBF04)"/>', // Club head and ball
+        tennis: '<circle cx="78" cy="70" r="10" fill="none" stroke="var(--secondary-color, #EFBF04)" stroke-width="2"/><line x1="78" y1="70" x2="78" y2="90" stroke="var(--secondary-color, #EFBF04)" stroke-width="2"/><line x1="68" y1="90" x2="88" y2="90" stroke="var(--secondary-color, #EFBF04)" stroke-width="2"/>', // Racket shape
+        lacrosse: '<path d="M65,65 L85,75 M65,85 L85,75 L65,65 L65,85" stroke="var(--secondary-color, #EFBF04)" stroke-width="3" fill="none"/><circle cx="70" cy="70" r="4" fill="var(--secondary-color, #EFBF04)"/><path d="M75,65 L75,85 M70,85 L80,85" stroke="var(--secondary-color, #EFBF04)" stroke-width="3" fill="none"/>', // Stick + Ball
+        cheer: '<path d="M75,65 L65,85 M75,65 L85,85 M75,65 L75,75 M70,80 L80,80" stroke="var(--secondary-color, #EFBF04)" stroke-width="3" fill="none"/>', // Megaphone/Bullhorn
+        bowling: '<circle cx="78" cy="80" r="12" fill="var(--secondary-color, #EFBF04)"><circle cx="74" cy="76" r="2" fill="var(--primary-color, #00205B)"/><circle cx="82" cy="76" r="2" fill="var(--primary-color, #00205B)"/><circle cx="78" cy="82" r="2" fill="var(--primary-color, #00205B)"/></circle>',
     };
 
     // Refined SVG Fallback Images 
@@ -175,20 +175,16 @@ document.addEventListener('DOMContentLoaded', () => {
             <rect x="65" y="60" width="10" height="10" fill="#FFFFFF"/>
         </svg>`,
         
-        // Male Silhouette (More defined shoulders/stance)
-        player_male: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100%" height="100%" preserveAspectRatio="xMidYMid meet" fill="var(--primary-color, #00205B)">
-            <circle cx="50" cy="25" r="15"/>
-            <path d="M50,40 C45,40 35,45 35,55 L35,75 C35,85 30,90 30,95 L40,95 C40,90 45,85 45,75 L45,60 C45,55 50,50 50,50 C50,50 55,55 55,60 L55,75 C55,85 60,90 60,95 L70,95 C70,90 65,85 65,75 L65,55 C65,45 55,40 50,40 Z"/>
-            <!-- Placeholder for sport icon -->
-            %SPORT_ICON%
+        // More detailed Male Silhouette Base (no placeholder needed here)
+        player_male_base: `<svg viewBox="0 0 100 100" fill="var(--primary-color, #00205B)">
+            <circle cx="50" cy="22" r="12"/>
+            <path d="M50,34 C40,34 30,42 30,55 L30,70 C30,80 25,85 25,95 L40,95 C40,88 45,85 45,75 L45,60 C45,55 48,50 50,50 C52,50 55,55 55,60 L55,75 C55,85 60,88 60,95 L75,95 C75,85 70,80 70,70 L70,55 C70,42 60,34 50,34 Z"/>
         </svg>`,
         
-        // Female Silhouette (Slightly different torso/stance)
-        player_female: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100%" height="100%" preserveAspectRatio="xMidYMid meet" fill="var(--primary-color, #00205B)">
-            <circle cx="50" cy="25" r="15"/>
-            <path d="M50,40 C47,40 40,45 40,55 L40,75 C40,85 35,90 35,95 L45,95 C45,90 50,85 50,75 C50,75 50,75 50,75 L50,60 C50,55 53,50 53,50 C53,50 50,55 50,60 L50,75 C50,85 55,90 55,95 L65,95 C65,90 60,85 60,75 L60,55 C60,45 53,40 50,40 Z"/>
-            <!-- Placeholder for sport icon -->
-            %SPORT_ICON%
+        // More detailed Female Silhouette Base (no placeholder needed here)
+        player_female_base: `<svg viewBox="0 0 100 100" fill="var(--primary-color, #00205B)">
+            <circle cx="50" cy="22" r="12"/>
+            <path d="M50,34 C45,34 38,40 38,50 L35,75 C35,85 30,90 30,95 L45,95 C45,88 48,85 48,75 L50,55 C50,53 50,53 50,55 L52,75 C52,85 55,88 55,95 L70,95 C70,90 65,85 65,75 L62,50 C62,40 55,34 50,34 Z"/>
         </svg>`,
         
         athlete: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100%" height="100%" preserveAspectRatio="xMidYMid meet" fill="var(--primary-color, #00205B)">
@@ -599,46 +595,53 @@ document.addEventListener('DOMContentLoaded', () => {
         return 'fa-trophy';
     }
 
-    // Updated Helper to get appropriate SVG fallback based on context
+    // Updated Helper to get appropriate SVG fallback with sport overlays
     function getSvgFallback(type = 'player', gender = null, sportName = null) {
-        let baseSvgTemplate = '';
-        let sportIconElement = '';
-        
+        let baseSvg = '';
+        let sportOverlay = '';
+
         switch(type) {
             case 'school':
-                baseSvgTemplate = svgFallbacks.school;
+                baseSvg = svgFallbacks.school;
                 break;
             case 'team':
-                baseSvgTemplate = svgFallbacks.team;
+                baseSvg = svgFallbacks.team;
                 break;
             case 'trophy':
-                baseSvgTemplate = svgFallbacks.trophy;
+                baseSvg = svgFallbacks.trophy;
                 break;
-            case 'athlete':
-                baseSvgTemplate = svgFallbacks.athlete; // Use generic athlete for now
+            case 'athlete': // Using generic athlete for now, could be expanded
+                baseSvg = svgFallbacks.athlete; 
                 break;
             case 'player':
             default:
-                // Basic gender selection
-                baseSvgTemplate = (gender && gender.toLowerCase().startsWith('f')) ? svgFallbacks.player_female : svgFallbacks.player_male;
+                // Select base gender silhouette
+                const baseTemplate = (gender && gender.toLowerCase().startsWith('f')) 
+                                    ? svgFallbacks.player_female_base 
+                                    : svgFallbacks.player_male_base;
                 
-                // Determine sport keyword
+                // Find matching sport overlay
                 if (sportName) {
                     const lowerSport = sportName.toLowerCase();
                     for (const [keyword, sportKey] of Object.entries(sportKeywords)) {
                         if (lowerSport.includes(keyword)) {
-                            sportIconElement = sportSvgElements[sportKey] || '';
+                            sportOverlay = sportSvgOverlays[sportKey] || '';
                             break; // Use first match
                         }
                     }
                 }
+                // Combine base and overlay
+                // Assumes base SVG template ends with </svg>
+                // Inserts overlay before the closing tag
+                if (sportOverlay && baseTemplate.endsWith('</svg>')) {
+                    baseSvg = baseTemplate.slice(0, -6) + sportOverlay + '</svg>';
+                } else {
+                    baseSvg = baseTemplate; // Use base if no overlay or template malformed
+                }
                 break;
         }
-        
-        // Replace placeholder with sport icon element (if any)
-        let baseSvg = baseSvgTemplate.replace('%SPORT_ICON%', sportIconElement);
-        
-        // Inject current theme colors into SVG
+
+        // Inject current theme colors into the final combined SVG
         const primaryColor = getComputedStyle(document.documentElement).getPropertyValue('--primary-color').trim() || defaultTheme.primary;
         const secondaryColor = getComputedStyle(document.documentElement).getPropertyValue('--secondary-color').trim() || defaultTheme.secondary;
         
@@ -760,10 +763,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (sports.length === 0) {
             sportsGrid.innerHTML = '<p style="grid-column: 1 / -1; text-align: center;">No sports teams found for this school.</p>';
         } else {
-            sports.forEach(sport => {
-                const sportCard = createSportCard(sport);
-                sportsGrid.appendChild(sportCard);
-            });
+        sports.forEach(sport => {
+            const sportCard = createSportCard(sport);
+            sportsGrid.appendChild(sportCard);
+        });
         }
         
         contentContainer.appendChild(clone);
@@ -816,10 +819,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (teams.length === 0) {
             yearsGrid.innerHTML = '<p style="grid-column: 1 / -1; text-align: center;">No championship years found for this sport.</p>';
         } else {
-            teams.forEach(team => {
-                const yearCard = createYearCard(team);
-                yearsGrid.appendChild(yearCard);
-            });
+        teams.forEach(team => {
+            const yearCard = createYearCard(team);
+            yearsGrid.appendChild(yearCard);
+        });
         }
         
         contentContainer.appendChild(clone);
@@ -875,7 +878,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         if (state.selectedTeam.team_photo_url) {
             teamPhoto.src = state.selectedTeam.team_photo_url;
-            teamPhoto.alt = `${state.selectedSchool.name} ${state.selectedSport} Team ${state.selectedYear}`;
+        teamPhoto.alt = `${state.selectedSchool.name} ${state.selectedSport} Team ${state.selectedYear}`;
             teamPhoto.style.display = 'block';
         } else {
             teamMediaContainer.innerHTML = getSvgFallback('team'); 
@@ -925,10 +928,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (players.length === 0) {
              rosterGrid.innerHTML = '<p style="grid-column: 1 / -1; text-align: center;">No players found for this team.</p>';
         } else {
-            players.forEach(player => {
-                const playerCard = createPlayerCard(player);
-                rosterGrid.appendChild(playerCard);
-            });
+        players.forEach(player => {
+            const playerCard = createPlayerCard(player);
+            rosterGrid.appendChild(playerCard);
+        });
         }
         
         contentContainer.appendChild(clone);
@@ -955,9 +958,7 @@ document.addEventListener('DOMContentLoaded', () => {
             playerImage.src = player.media_url;
             playerImage.style.display = 'block';
         } else {
-            // Determine gender and sport for fallback
             const gender = player.gender || (player.name && (player.name.toLowerCase().includes('women') || player.name.toLowerCase().includes('girl')) ? 'female' : 'male');
-            // Use selectedSport from state as context
             cardMedia.innerHTML = getSvgFallback('player', gender, state.selectedSport); 
         }
         
@@ -1112,10 +1113,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (athletes.length === 0) {
             athletesGrid.innerHTML = '<p style="grid-column: 1 / -1; text-align: center;">No athletes found in this category for this school.</p>';
         } else {
-            athletes.forEach(athlete => {
-                const athleteCard = createAthleteCard(athlete);
-                athletesGrid.appendChild(athleteCard);
-            });
+        athletes.forEach(athlete => {
+            const athleteCard = createAthleteCard(athlete);
+            athletesGrid.appendChild(athleteCard);
+        });
         }
         
         contentContainer.appendChild(clone);
@@ -1220,7 +1221,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         const affiliationElement = clone.querySelector('.athlete-affiliation');
         let affiliationText = '';
-         if (athlete.type === 'd1_athlete' && athlete.college) {
+        if (athlete.type === 'd1_athlete' && athlete.college) {
             affiliationText = athlete.college;
         } else if (athlete.type === 'pro_athlete' && athlete.professional_team) {
             affiliationText = athlete.professional_team;
@@ -1238,10 +1239,10 @@ document.addEventListener('DOMContentLoaded', () => {
              let baseDesc = `${athlete.name || 'This athlete'}`;
              if (athlete.graduation_year) baseDesc += ` graduated from ${state.selectedSchool.name} in ${athlete.graduation_year}.`;
              else baseDesc += ` attended ${state.selectedSchool.name}.`;
-
-             if (athlete.type === 'd1_athlete') {
+        
+        if (athlete.type === 'd1_athlete') {
                  baseDesc += ` They ${athlete.college ? `compete(d) in ${athlete.sport || 'sports'} at ${athlete.college}` : 'competed at the Division 1 level'}.`;
-             } else if (athlete.type === 'pro_athlete') {
+        } else if (athlete.type === 'pro_athlete') {
                  baseDesc += ` They went on to play ${athlete.sport || 'sports'} professionally${athlete.professional_team ? ` for ${athlete.professional_team}` : ''}`;
              }
              descriptionText = baseDesc;
@@ -1264,70 +1265,46 @@ document.addEventListener('DOMContentLoaded', () => {
     // Updated Image Fallback Handler
     function setupImageFallbacks() {
         document.querySelectorAll('img').forEach(img => {
-            // Skip if already processed, if src is missing, or if it's already a data URL (like the temp pixel)
             if (img.dataset.fallbackApplied || !img.src || img.src.startsWith('data:image')) {
                 return;
             }
 
-            // Define the error handler function once
             const errorHandler = function() {
-                // Prevent infinite loops
                 if (this.dataset.fallbackApplied) return;
                 this.dataset.fallbackApplied = 'true';
 
                 const alt = this.alt || '';
                 const parentElement = this.parentNode;
-
-                if (!parentElement) return; // Exit if no parent
-
-                // Hide broken image
+                if (!parentElement) return;
                 this.style.display = 'none';
-
-                // Don't add fallback if SVG already exists (e.g., from initial render)
-                if (parentElement.querySelector('svg')) {
-                    return;
-                }
+                if (parentElement.querySelector('svg')) return; // Don't add if SVG exists
 
                 let fallbackType = 'player';
                 let gender = null;
-                // Try to get sport context from state IF it's relevant
                 let sport = (state.currentView === 'team-detail' || state.currentView === 'player-detail') ? state.selectedSport : null;
 
-                // Determine fallback type based on class
                 if (this.classList.contains('card-image')) fallbackType = 'school';
                 if (this.classList.contains('team-photo')) fallbackType = 'team';
                 if (this.classList.contains('player-image') || this.classList.contains('player-photo')) fallbackType = 'player';
                 if (this.classList.contains('athlete-image') || this.classList.contains('athlete-photo')) fallbackType = 'athlete';
 
-                // Infer gender if player
                 if (fallbackType === 'player') {
                     if (alt.toLowerCase().includes('women') || alt.toLowerCase().includes('girl')) gender = 'female';
                     else gender = 'male';
-                    // If sport context missing, could try to infer from alt text here
-                    // if (!sport) { /* ... */ }
+                    // Could try inferring sport from alt if needed
                 } else if (fallbackType === 'athlete') {
-                    // Could add gender/sport inference for athlete alt text too if needed
+                    // Could add gender/sport inference here too
                 }
 
-                // Inject the appropriate SVG
                 parentElement.insertAdjacentHTML('beforeend', getSvgFallback(fallbackType, gender, sport));
                 parentElement.style.backgroundColor = 'var(--background-light)';
-
-                // Remove the error handler after first trigger
                 this.onerror = null;
             };
 
-            // Assign the error handler
             img.onerror = errorHandler;
 
-            // Check for already broken images (e.g., cached 404)
-            // Use img.naturalWidth === 0 for a more reliable check than just !img.complete
             if (img.complete && img.naturalWidth === 0) {
-                // If already complete but broken, manually trigger the handler
-                errorHandler.call(img); // Call handler with img as `this`
-            } else if (!img.complete) {
-                // If not yet complete, the onerror handler will catch it if it fails
-                // No immediate action needed here, just let the browser handle loading
+                errorHandler.call(img);
             }
         });
     }
