@@ -165,7 +165,7 @@ document.addEventListener('DOMContentLoaded', () => {
         bowling: '<circle cx="75" cy="75" r="10" fill="var(--secondary-color, #EFBF04)"><circle cx="72" cy="72" r="2" fill="#FFF"/><circle cx="78" cy="72" r="2" fill="#FFF"/><circle cx="75" cy="78" r="2" fill="#FFF"/></circle>'
     };
 
-    // Refined SVG Fallback Images 
+    // Refined SVG Fallback Images
     const svgFallbacks = {
         school: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100%" height="100%" preserveAspectRatio="xMidYMid meet">
             <rect x="10" y="50" width="80" height="40" fill="var(--primary-color, #00205B)"/>
@@ -176,20 +176,84 @@ document.addEventListener('DOMContentLoaded', () => {
         </svg>`,
         
         // Male Silhouette (More defined shoulders/stance)
-        player_male: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100%" height="100%" preserveAspectRatio="xMidYMid meet" fill="var(--primary-color, #00205B)">
-            <circle cx="50" cy="25" r="15"/>
-            <path d="M50,40 C45,40 35,45 35,55 L35,75 C35,85 30,90 30,95 L40,95 C40,90 45,85 45,75 L45,60 C45,55 50,50 50,50 C50,50 55,55 55,60 L55,75 C55,85 60,90 60,95 L70,95 C70,90 65,85 65,75 L65,55 C65,45 55,40 50,40 Z"/>
-            <!-- Placeholder for sport icon -->
-            %SPORT_ICON%
-        </svg>`,
+        player_male: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet">
+  <defs>
+    <!-- A skin-tone gradient for the head -->
+    <linearGradient id="skinGradient" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#f5cfa0"/>
+      <stop offset="100%" stop-color="#e0a96d"/>
+    </linearGradient>
+    <!-- A gradient for the shirt using the primary theme color -->
+    <linearGradient id="shirtGradient" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="var(--primary-color, #00205B)"/>
+      <stop offset="100%" stop-color="#000033"/>
+    </linearGradient>
+    <!-- A gradient for the pants -->
+    <linearGradient id="pantsGradient" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#555"/>
+      <stop offset="100%" stop-color="#222"/>
+    </linearGradient>
+    <!-- A soft blur filter for subtle shadowing -->
+    <filter id="softBlur" x="0" y="0" width="200%" height="200%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="1.5" />
+    </filter>
+  </defs>
+  <g filter="url(#softBlur)">
+    <!-- Head with a refined circle and subtle detail for hair -->
+    <circle cx="50" cy="20" r="10" fill="url(#skinGradient)"/>
+    <path d="M40,18 Q50,10 60,18" fill="none" stroke="#333" stroke-width="0.8"/>
+    <!-- Torso rendered with smooth curves and gradient shading -->
+    <path d="M40,30 C40,40 60,40 60,30 L60,50 C60,60 40,60 40,50 Z" fill="url(#shirtGradient)"/>
+    <!-- Arms with a gentle curve to indicate muscle tone -->
+    <path d="M40,35 C30,40 30,50 40,55" fill="url(#skinGradient)"/>
+    <path d="M60,35 C70,40 70,50 60,55" fill="url(#skinGradient)"/>
+    <!-- Legs with defined shapes and darker gradient for contrast -->
+    <path d="M45,50 L45,70 L50,70 L50,50 Z" fill="url(#pantsGradient)"/>
+    <path d="M50,50 L50,70 L55,70 L55,50 Z" fill="url(#pantsGradient)"/>
+    <!-- Placeholder for accessory overlay (to be replaced with a FontAwesome icon or its fallback) -->
+    %SPORT_ICON%
+  </g>
+</svg>`,
         
         // Female Silhouette (Slightly different torso/stance)
-        player_female: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100%" height="100%" preserveAspectRatio="xMidYMid meet" fill="var(--primary-color, #00205B)">
-            <circle cx="50" cy="25" r="15"/>
-            <path d="M50,40 C47,40 40,45 40,55 L40,75 C40,85 35,90 35,95 L45,95 C45,90 50,85 50,75 C50,75 50,75 50,75 L50,60 C50,55 53,50 53,50 C53,50 50,55 50,60 L50,75 C50,85 55,90 55,95 L65,95 C65,90 60,85 60,75 L60,55 C60,45 53,40 50,40 Z"/>
-            <!-- Placeholder for sport icon -->
-            %SPORT_ICON%
-        </svg>`,
+        player_female: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet">
+  <defs>
+    <!-- A skin-tone gradient for the head -->
+    <linearGradient id="skinGradient" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#f5cfa0"/>
+      <stop offset="100%" stop-color="#e0a96d"/>
+    </linearGradient>
+    <!-- A gradient for the shirt using the primary theme color -->
+    <linearGradient id="shirtGradient" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="var(--primary-color, #00205B)"/>
+      <stop offset="100%" stop-color="#000033"/>
+    </linearGradient>
+    <!-- A gradient for the pants -->
+    <linearGradient id="pantsGradient" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#555"/>
+      <stop offset="100%" stop-color="#222"/>
+    </linearGradient>
+    <!-- A soft blur filter for subtle shadowing -->
+    <filter id="softBlur" x="0" y="0" width="200%" height="200%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="1.5" />
+    </filter>
+  </defs>
+  <g filter="url(#softBlur)">
+    <!-- Head with a refined circle and subtle detail for hair -->
+    <circle cx="50" cy="20" r="10" fill="url(#skinGradient)"/>
+    <path d="M40,18 Q50,10 60,18" fill="none" stroke="#333" stroke-width="0.8"/>
+    <!-- Torso rendered with smooth curves and gradient shading -->
+    <path d="M40,30 C40,40 60,40 60,30 L60,50 C60,60 40,60 40,50 Z" fill="url(#shirtGradient)"/>
+    <!-- Arms with a gentle curve to indicate muscle tone -->
+    <path d="M40,35 C30,40 30,50 40,55" fill="url(#skinGradient)"/>
+    <path d="M60,35 C70,40 70,50 60,55" fill="url(#skinGradient)"/>
+    <!-- Legs with defined shapes and darker gradient for contrast -->
+    <path d="M45,50 L45,70 L50,70 L50,50 Z" fill="url(#pantsGradient)"/>
+    <path d="M50,50 L50,70 L55,70 L55,50 Z" fill="url(#pantsGradient)"/>
+    <!-- Placeholder for accessory overlay (to be replaced with a FontAwesome icon or its fallback) -->
+    %SPORT_ICON%
+  </g>
+</svg>`,
         
         athlete: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100%" height="100%" preserveAspectRatio="xMidYMid meet" fill="var(--primary-color, #00205B)">
             <circle cx="50" cy="25" r="15"/>
