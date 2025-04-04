@@ -147,25 +147,26 @@ document.addEventListener('DOMContentLoaded', () => {
         // Add others if specific SVG elements are created
     };
 
-    // Simple SVG paths/elements for sport overlays (using secondary color)
+    // Improved Simple SVG paths/elements for sport overlays (using secondary color)
     const sportSvgElements = {
-        basketball: '<circle cx="75" cy="75" r="10" fill="var(--secondary-color, #EFBF04)"/>',
-        football: '<ellipse cx="75" cy="75" rx="12" ry="8" fill="var(--secondary-color, #EFBF04)"/>',
-        baseball: '<circle cx="75" cy="75" r="8" fill="var(--secondary-color, #EFBF04)"><path d="M70,72 L75,77 M80,72 L75,77" stroke="#FFF" stroke-width="1"/></circle>',
-        soccer: '<circle cx="75" cy="75" r="10" fill="none" stroke="var(--secondary-color, #EFBF04)" stroke-width="2"/><path d="M75,65 L75,85 M65,75 L85,75 M68,68 L82,82 M68,82 L82,68" stroke="var(--secondary-color, #EFBF04)" stroke-width="1"/>',
-        volleyball: '<circle cx="75" cy="75" r="10" fill="var(--secondary-color, #EFBF04)"><path d="M70,70 Q75,65 80,70 M70,80 Q75,85 80,80" fill="none" stroke="#FFF" stroke-width="1"/></circle>',
-        track: '<path d="M65,70 L75,80 L85,70" stroke="var(--secondary-color, #EFBF04)" stroke-width="2" fill="none"/>', // Simple arrow/chevron
-        wrestling: '<path d="M65,70 Q75,65 85,70 M65,80 Q75,85 85,80" stroke="var(--secondary-color, #EFBF04)" stroke-width="2" fill="none"/>', // Simple curves
-        swimming: '<path d="M65,72 Q75,70 85,72 M65,78 Q75,80 85,78" stroke="var(--secondary-color, #EFBF04)" stroke-width="2" fill="none"/>', // Simple waves
-        hockey: '<path d="M65,70 L85,70 L75,85 Z" fill="var(--secondary-color, #EFBF04)"/>', // Simple stick shape
-        golf: '<circle cx="75" cy="75" r="5" fill="var(--secondary-color, #EFBF04)"/>',
-        tennis: '<circle cx="75" cy="75" r="8" fill="var(--secondary-color, #EFBF04)"/><line x1="70" y1="70" x2="80" y2="80" stroke="#FFF" stroke-width="1"/><line x1="70" y1="80" x2="80" y2="70" stroke="#FFF" stroke-width="1"/>',
-        lacrosse: '<path d="M65,70 L85,70 L75,85 Z" fill="var(--secondary-color, #EFBF04)"/>', // Reuse hockey stick
-        cheer: '<path d="M65,70 L70,85 L75,70 L80,85 L85,70" stroke="var(--secondary-color, #EFBF04)" stroke-width="2" fill="none"/>', // Pom-pom like
-        bowling: '<circle cx="75" cy="75" r="10" fill="var(--secondary-color, #EFBF04)"><circle cx="72" cy="72" r="2" fill="#FFF"/><circle cx="78" cy="72" r="2" fill="#FFF"/><circle cx="75" cy="78" r="2" fill="#FFF"/></circle>'
+        basketball: '<circle cx="80" cy="75" r="12" fill="var(--secondary-color, #EFBF04)"/>',
+        football: '<ellipse cx="80" cy="75" rx="15" ry="10" fill="var(--secondary-color, #EFBF04)"/>',
+        baseball: '<circle cx="80" cy="75" r="10" fill="var(--secondary-color, #EFBF04)"><path d="M75,72 L80,77 M85,72 L80,77" stroke="#FFF" stroke-width="1"/></circle>',
+        soccer: '<circle cx="80" cy="75" r="12" fill="none" stroke="var(--secondary-color, #EFBF04)" stroke-width="2"/><path d="M80,65 L80,85 M70,75 L90,75 M73,68 L87,82 M73,82 L87,68" stroke="var(--secondary-color, #EFBF04)" stroke-width="1"/>',
+        volleyball: '<circle cx="80" cy="75" r="12" fill="var(--secondary-color, #EFBF04)"><path d="M75,70 Q80,65 85,70 M75,80 Q80,85 85,80" fill="none" stroke="#FFF" stroke-width="1"/></circle>',
+        track: '<path d="M70,70 L80,85 L90,70" stroke="var(--secondary-color, #EFBF04)" stroke-width="3" fill="none"/>', // Simple arrow/chevron
+        wrestling: '<path d="M70,70 Q80,65 90,70 M70,80 Q80,85 90,80" stroke="var(--secondary-color, #EFBF04)" stroke-width="3" fill="none"/>', // Simple curves
+        swimming: '<path d="M70,72 Q80,70 90,72 M70,78 Q80,80 90,78" stroke="var(--secondary-color, #EFBF04)" stroke-width="3" fill="none"/>', // Simple waves
+        // Hockey/Lacrosse Stick (simplified, points down-right)
+        hockey: '<rect x="70" y="70" width="20" height="5" fill="var(--secondary-color, #EFBF04)" transform="rotate(15 80 72.5)"/><rect x="85" y="60" width="5" height="20" fill="var(--secondary-color, #EFBF04)" transform="rotate(15 87.5 70)"/>',
+        lacrosse: '<rect x="70" y="70" width="20" height="5" fill="var(--secondary-color, #EFBF04)" transform="rotate(15 80 72.5)"/><rect x="85" y="60" width="5" height="20" fill="var(--secondary-color, #EFBF04)" transform="rotate(15 87.5 70)"/>', // Reuse hockey
+        golf: '<circle cx="80" cy="75" r="6" fill="var(--secondary-color, #EFBF04)"/>',
+        tennis: '<circle cx="80" cy="75" r="10" fill="var(--secondary-color, #EFBF04)"/><line x1="75" y1="70" x2="85" y2="80" stroke="#FFF" stroke-width="1.5"/><line x1="75" y1="80" x2="85" y2="70" stroke="#FFF" stroke-width="1.5"/>',
+        cheer: '<path d="M70,70 L75,85 L80,70 L85,85 L90,70" stroke="var(--secondary-color, #EFBF04)" stroke-width="3" fill="none"/>', // Pom-pom like
+        bowling: '<circle cx="80" cy="75" r="12" fill="var(--secondary-color, #EFBF04)"><circle cx="77" cy="72" r="2.5" fill="#FFF"/><circle cx="83" cy="72" r="2.5" fill="#FFF"/><circle cx="80" cy="78" r="2.5" fill="#FFF"/></circle>'
     };
 
-    // Refined SVG Fallback Images 
+    // More Detailed SVG Fallback Images 
     const svgFallbacks = {
         school: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100%" height="100%" preserveAspectRatio="xMidYMid meet">
             <rect x="10" y="50" width="80" height="40" fill="var(--primary-color, #00205B)"/>
@@ -175,19 +176,27 @@ document.addEventListener('DOMContentLoaded', () => {
             <rect x="65" y="60" width="10" height="10" fill="#FFFFFF"/>
         </svg>`,
         
-        // Male Silhouette (More defined shoulders/stance)
-        player_male: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100%" height="100%" preserveAspectRatio="xMidYMid meet" fill="var(--primary-color, #00205B)">
-            <circle cx="50" cy="25" r="15"/>
-            <path d="M50,40 C45,40 35,45 35,55 L35,75 C35,85 30,90 30,95 L40,95 C40,90 45,85 45,75 L45,60 C45,55 50,50 50,50 C50,50 55,55 55,60 L55,75 C55,85 60,90 60,95 L70,95 C70,90 65,85 65,75 L65,55 C65,45 55,40 50,40 Z"/>
-            <!-- Placeholder for sport icon -->
+        // Male Silhouette v2 (More detail)
+        player_male: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100%" height="100%" preserveAspectRatio="xMidYMid meet">
+            <g fill="var(--primary-color, #00205B)">
+                <circle cx="50" cy="25" r="12"/> <!-- Head -->
+                <path d="M50,37 C40,37 35,42 35,50 L35,70 Q35,80 30,85 L30,95 L40,95 Q40,90 45,85 L45,60 C45,55 48,50 50,50 C52,50 55,55 55,60 L55,85 Q60,90 60,95 L70,95 L70,85 Q65,80 65,70 L65,50 C65,42 60,37 50,37 Z"/> <!-- Body & Legs -->
+                <path d="M35,50 Q30,55 30,65 L30,70 Q35,68 35,65 Z"/> <!-- Left Arm -->
+                <path d="M65,50 Q70,55 70,65 L70,70 Q65,68 65,65 Z"/> <!-- Right Arm -->
+            </g>
+            <!-- Sport Icon -->
             %SPORT_ICON%
         </svg>`,
         
-        // Female Silhouette (Slightly different torso/stance)
-        player_female: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100%" height="100%" preserveAspectRatio="xMidYMid meet" fill="var(--primary-color, #00205B)">
-            <circle cx="50" cy="25" r="15"/>
-            <path d="M50,40 C47,40 40,45 40,55 L40,75 C40,85 35,90 35,95 L45,95 C45,90 50,85 50,75 C50,75 50,75 50,75 L50,60 C50,55 53,50 53,50 C53,50 50,55 50,60 L50,75 C50,85 55,90 55,95 L65,95 C65,90 60,85 60,75 L60,55 C60,45 53,40 50,40 Z"/>
-            <!-- Placeholder for sport icon -->
+        // Female Silhouette v2 (More detail)
+        player_female: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100%" height="100%" preserveAspectRatio="xMidYMid meet">
+            <g fill="var(--primary-color, #00205B)">
+                <circle cx="50" cy="25" r="12"/> <!-- Head -->
+                <path d="M50,37 C45,37 40,42 40,50 L40,70 Q40,80 35,85 L35,95 L45,95 Q45,90 50,85 C50,85 50,85 50,75 L50,60 C50,55 52,50 52,50 C52,50 50,55 50,60 L50,75 C50,85 55,90 55,95 L65,95 L65,85 Q60,80 60,70 L60,50 C60,42 55,37 50,37 Z"/> <!-- Body & Legs -->
+                <path d="M40,50 Q35,55 35,65 L35,70 Q40,68 40,65 Z"/> <!-- Left Arm -->
+                <path d="M60,50 Q65,55 65,65 L65,70 Q60,68 60,65 Z"/> <!-- Right Arm -->
+            </g>
+            <!-- Sport Icon -->
             %SPORT_ICON%
         </svg>`,
         
@@ -615,14 +624,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 baseSvgTemplate = svgFallbacks.trophy;
                 break;
             case 'athlete':
-                baseSvgTemplate = svgFallbacks.athlete; // Use generic athlete for now
+                // Athletes can also have gender/sport distinction if desired
+                baseSvgTemplate = (gender && gender.toLowerCase().startsWith('f')) 
+                               ? svgFallbacks.player_female // Reuse player female for female athletes
+                               : svgFallbacks.player_male;   // Reuse player male for male athletes
+                // Add sport icon logic similar to player if needed
+                // if (sportName) { ... find sportIconElement ... }
                 break;
             case 'player':
             default:
-                // Basic gender selection
-                baseSvgTemplate = (gender && gender.toLowerCase().startsWith('f')) ? svgFallbacks.player_female : svgFallbacks.player_male;
+                // Gender selection for player
+                baseSvgTemplate = (gender && gender.toLowerCase().startsWith('f')) 
+                                ? svgFallbacks.player_female 
+                                : svgFallbacks.player_male;
                 
-                // Determine sport keyword
+                // Determine sport keyword for icon overlay
                 if (sportName) {
                     const lowerSport = sportName.toLowerCase();
                     for (const [keyword, sportKey] of Object.entries(sportKeywords)) {
@@ -642,6 +658,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const primaryColor = getComputedStyle(document.documentElement).getPropertyValue('--primary-color').trim() || defaultTheme.primary;
         const secondaryColor = getComputedStyle(document.documentElement).getPropertyValue('--secondary-color').trim() || defaultTheme.secondary;
         
+        // Ensure replacement targets the placeholders correctly
         let finalSvg = baseSvg.replace(/var(--primary-color, #00205B)/g, primaryColor);
         finalSvg = finalSvg.replace(/var(--secondary-color, #EFBF04)/g, secondaryColor);
         
@@ -1143,8 +1160,9 @@ document.addEventListener('DOMContentLoaded', () => {
             athleteImage.src = athlete.media_url;
             athleteImage.style.display = 'block';
         } else {
-            // Use SVG fallback - generic athlete for now, but could adapt like player
-            cardMedia.innerHTML = getSvgFallback('athlete'); // Could add gender/sport here too if needed
+            // Can add gender inference here if needed for athletes
+            // const gender = athlete.gender || ... inference ...;
+            cardMedia.innerHTML = getSvgFallback('athlete', null, athlete.sport); // Pass sport
         }
         
         athleteImage.alt = athlete.name || 'Athlete';
@@ -1205,7 +1223,9 @@ document.addEventListener('DOMContentLoaded', () => {
             athletePhoto.src = athlete.media_url;
             athletePhoto.style.display = 'block';
         } else {
-            athleteMediaContainer.innerHTML = getSvgFallback('athlete'); 
+            // Can add gender inference here if needed for athletes
+            // const gender = athlete.gender || ... inference ...;
+            athleteMediaContainer.innerHTML = getSvgFallback('athlete', null, athlete.sport); // Pass sport
         }
 
         athleteNameTitle.textContent = athlete.name || 'Unknown Athlete';

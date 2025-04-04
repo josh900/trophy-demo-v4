@@ -255,42 +255,56 @@ main {
 .team-content {
     display: flex;
     flex-wrap: wrap;
-    gap: 30px; /* Increased gap */
+    gap: 30px; 
     margin-bottom: 30px;
-    align-items: flex-start; /* Align items to the top */
-    justify-content: center; /* Center items when wrapping */
+    align-items: stretch; /* Stretch items to equal height */
+    justify-content: center; 
 }
 
 .team-media {
-    flex: 1 1 400px; /* Allow growing, basis of 400px */
+    flex: 1 1 400px; 
     max-width: 600px;
     min-width: 300px;
+    display: flex; /* Added flex to help contain image */
+    flex-direction: column;
 }
 
 .team-photo {
     width: 100%;
+    height: auto; /* Allow height to adjust based on contain */
+    max-height: 350px; /* Match trophy container height */
     border-radius: 8px;
     box-shadow: 0 4px 8px var(--shadow-color);
-    object-fit: contain; /* Ensure full team photo is visible */
-    background-color: var(--background-light); /* Background for contain */
+    object-fit: contain; 
+    background-color: var(--background-light); 
+    display: block; /* Ensure display block */
 }
 
 .trophy-container {
-    flex: 1 1 300px; /* Allow growing, basis of 300px */
+    flex: 1 1 300px; 
     max-width: 400px;
     min-width: 300px;
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: flex-start; /* Align content to top */
+    justify-content: flex-start; 
     position: relative;
-    padding-top: 10px; /* Add some space above trophy */
+    /* Removed padding-top */
+}
+
+.trophy-container h3 {
+    margin-bottom: 10px; /* Add margin below the heading */
+    text-align: center; /* Center heading */
+    width: 100%; /* Ensure heading takes full width */
+    font-size: 1.1rem; /* Slightly smaller heading */
+    color: var(--text-dark);
 }
 
 .trophy-placeholder {
     width: 100%;
-    max-width: 250px;
-    height: 250px;
+    /* max-width: 250px; Let flexbox handle sizing */
+    height: 100%; /* Fill available space */
+    min-height: 250px; /* Ensure minimum size */
     background-color: var(--background-light);
     border-radius: 8px;
     display: flex;
@@ -301,6 +315,7 @@ main {
     text-align: center;
     box-shadow: inset 0 0 10px var(--shadow-color);
     transition: all var(--transition-speed);
+    flex-grow: 1; /* Allow placeholder to grow */
 }
 
 .trophy-placeholder svg {
@@ -319,12 +334,14 @@ main {
 
 .trophy-model-container {
     width: 100%;
-    height: 350px; /* Increased height */
+    height: 350px; 
     position: relative;
     border-radius: 8px;
     overflow: hidden;
     background-color: var(--background-light);
     box-shadow: 0 4px 8px var(--shadow-color);
+    display: flex; /* Ensure container takes space */
+    flex-grow: 1; /* Allow container to grow */
 }
 
 .trophy-model {
@@ -418,6 +435,7 @@ main {
 
 .player-card .card-media {
     background-color: var(--background-light);
+    height: 200px; /* Give player card media more height */
 }
 
 .player-position, .player-number {
@@ -436,28 +454,34 @@ main {
     width: 150px;
     height: 150px;
     border-radius: 50%;
-    overflow: hidden; /* Ensure overflow is hidden */
+    overflow: hidden; 
     border: 3px solid var(--secondary-color);
     background-color: var(--background-light); 
-    display: flex; /* Use flex to center SVG fallback */
+    display: flex; 
     justify-content: center;
     align-items: center;
+    position: relative; /* Needed for potential absolute positioning of SVG elements */
 }
 
 .player-photo,
 .athlete-photo {
-    display: block; /* Ensure image is block */
+    display: block; 
     width: 100%;
     height: 100%;
-    object-fit: contain; /* Definitely contain */
+    object-fit: contain; 
+    object-position: center; /* Ensure centering within contain */
 }
 
 .player-media svg,
 .athlete-media svg {
-    width: 70%; /* Slightly smaller SVG */
-    height: 70%;
+    width: 80%; /* Larger SVG */
+    height: 80%;
     object-fit: contain;
-    fill: var(--primary-color); /* Ensure SVG uses theme color */
+    position: absolute; /* Position SVG over potential background */
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    fill: var(--primary-color); 
 }
 
 .player-name {
@@ -512,6 +536,7 @@ main {
 
 .athlete-card .card-media {
     background-color: var(--background-light);
+    height: 200px; /* Give athlete card media more height */
 }
 
 .athlete-graduation, .athlete-sport, .athlete-affiliation {
@@ -531,12 +556,13 @@ main {
     width: 150px;
     height: 150px;
     border-radius: 8px;
-    overflow: hidden; /* Ensure overflow is hidden */
+    overflow: hidden; 
     border: 3px solid var(--secondary-color);
     background-color: var(--background-light); 
-    display: flex; /* Use flex to center SVG fallback */
+    display: flex; 
     justify-content: center;
     align-items: center;
+    position: relative; /* Needed for potential absolute positioning of SVG elements */
 }
 
 .athlete-name {
