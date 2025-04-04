@@ -165,34 +165,56 @@ document.addEventListener('DOMContentLoaded', () => {
         bowling: '<circle cx="75" cy="75" r="10" fill="var(--secondary-color, #EFBF04)"><circle cx="72" cy="72" r="2" fill="#FFF"/><circle cx="78" cy="72" r="2" fill="#FFF"/><circle cx="75" cy="78" r="2" fill="#FFF"/></circle>'
     };
 
-    // Updated detailed player SVG placeholders
-    player_male: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100%" height="100%" preserveAspectRatio="xMidYMid meet"><defs><linearGradient id="maleGradient" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="var(--primary-color, #00205B)" /><stop offset="100%" stop-color="var(--primary-color, #00205B)" stop-opacity="0.85" /></linearGradient></defs><circle cx="50" cy="20" r="10" fill="var(--primary-color, #00205B)" /><circle cx="50" cy="20" r="10" fill-opacity="0" stroke="black" stroke-opacity="0.2" stroke-width="0.5"/><path d="M40,30 C35,32 30,38 30,45 L30,55 C30,65 35,70 40,72 L40,80 C40,85 45,90 50,90 C55,90 60,85 60,80 L60,72 C65,70 70,65 70,55 L70,45 C70,38 65,32 60,30 C55,28 45,28 40,30 Z" fill="url(#maleGradient)" stroke="black" stroke-width="0.5" />%SPORT_ICON%</svg>`,
-    player_female: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100%" height="100%" preserveAspectRatio="xMidYMid meet"><defs><linearGradient id="femaleGradient" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="var(--primary-color, #00205B)" /><stop offset="100%" stop-color="var(--primary-color, #00205B)" stop-opacity="0.85" /></linearGradient></defs><circle cx="50" cy="20" r="10" fill="var(--primary-color, #00205B)" /><circle cx="50" cy="20" r="10" fill-opacity="0" stroke="black" stroke-opacity="0.2" stroke-width="0.5"/><path d="M42,30 C38,32 35,38 35,45 L35,55 C35,63 40,68 45,70 C47,71 53,71 55,70 C60,68 65,63 65,55 L65,45 C65,38 62,32 58,30 C54,28 46,28 42,30 Z" fill="url(#femaleGradient)" stroke="black" stroke-width="0.5" />%SPORT_ICON%</svg>`,
-    
-    athlete: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100%" height="100%" preserveAspectRatio="xMidYMid meet" fill="var(--primary-color, #00205B)">
-        <circle cx="50" cy="25" r="15"/>
-        <path d="M50,40 L50,80 M30,55 L70,55" stroke="var(--primary-color, #00205B)" stroke-width="8" fill="none"/>
-        <path d="M25,95 L40,55 M75,95 L60,55" stroke="var(--primary-color, #00205B)" stroke-width="5" fill="none"/>
-        <circle cx="50" cy="15" r="5" fill="var(--secondary-color, #EFBF04)"/>
-    </svg>`,
-    
-    team: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100%" height="100%" preserveAspectRatio="xMidYMid meet" fill="var(--primary-color, #00205B)">
-        <circle cx="30" cy="25" r="10"/>
-        <circle cx="50" cy="20" r="10"/>
-        <circle cx="70" cy="25" r="10"/>
-        <path d="M30,35 L30,70 M20,45 L40,45" stroke="var(--primary-color, #00205B)" stroke-width="5" fill="none"/>
-        <path d="M50,30 L50,70 M40,45 L60,45" stroke="var(--primary-color, #00205B)" stroke-width="5" fill="none"/>
-        <path d="M70,35 L70,70 M60,45 L80,45" stroke="var(--primary-color, #00205B)" stroke-width="5" fill="none"/>
-        <rect x="15" y="70" width="70" height="10" fill="var(--secondary-color, #EFBF04)"/>
-    </svg>`,
-    
-    trophy: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100%" height="100%" preserveAspectRatio="xMidYMid meet" fill="var(--secondary-color, #EFBF04)">
-        <path d="M35,20 L65,20 L65,40 C65,50 70,55 75,55 L75,60 C65,60 65,70 65,70 L35,70 C35,70 35,60 25,60 L25,55 C30,55 35,50 35,40 Z" />
-        <rect x="40" y="70" width="20" height="10"/>
-        <rect x="30" y="80" width="40" height="5"/>
-        <rect x="35" y="10" width="30" height="10" fill="var(--primary-color, #00205B)"/>
-    </svg>`
-};
+    // Refined SVG Fallback Images 
+    const svgFallbacks = {
+        school: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100%" height="100%" preserveAspectRatio="xMidYMid meet">
+            <rect x="10" y="50" width="80" height="40" fill="var(--primary-color, #00205B)"/>
+            <polygon points="50,10 10,50 90,50" fill="var(--primary-color, #00205B)"/>
+            <rect x="40" y="70" width="20" height="20" fill="var(--secondary-color, #EFBF04)"/>
+            <rect x="25" y="60" width="10" height="10" fill="#FFFFFF"/>
+            <rect x="65" y="60" width="10" height="10" fill="#FFFFFF"/>
+        </svg>`,
+        
+        // Male Silhouette (More defined shoulders/stance)
+        player_male: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100%" height="100%" preserveAspectRatio="xMidYMid meet" fill="var(--primary-color, #00205B)">
+            <circle cx="50" cy="25" r="15"/>
+            <path d="M50,40 C45,40 35,45 35,55 L35,75 C35,85 30,90 30,95 L40,95 C40,90 45,85 45,75 L45,60 C45,55 50,50 50,50 C50,50 55,55 55,60 L55,75 C55,85 60,90 60,95 L70,95 C70,90 65,85 65,75 L65,55 C65,45 55,40 50,40 Z"/>
+            <!-- Placeholder for sport icon -->
+            %SPORT_ICON%
+        </svg>`,
+        
+        // Female Silhouette (Slightly different torso/stance)
+        player_female: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100%" height="100%" preserveAspectRatio="xMidYMid meet" fill="var(--primary-color, #00205B)">
+            <circle cx="50" cy="25" r="15"/>
+            <path d="M50,40 C47,40 40,45 40,55 L40,75 C40,85 35,90 35,95 L45,95 C45,90 50,85 50,75 C50,75 50,75 50,75 L50,60 C50,55 53,50 53,50 C53,50 50,55 50,60 L50,75 C50,85 55,90 55,95 L65,95 C65,90 60,85 60,75 L60,55 C60,45 53,40 50,40 Z"/>
+            <!-- Placeholder for sport icon -->
+            %SPORT_ICON%
+        </svg>`,
+        
+        athlete: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100%" height="100%" preserveAspectRatio="xMidYMid meet" fill="var(--primary-color, #00205B)">
+            <circle cx="50" cy="25" r="15"/>
+            <path d="M50,40 L50,80 M30,55 L70,55" stroke="var(--primary-color, #00205B)" stroke-width="8" fill="none"/>
+            <path d="M25,95 L40,55 M75,95 L60,55" stroke="var(--primary-color, #00205B)" stroke-width="5" fill="none"/>
+            <circle cx="50" cy="15" r="5" fill="var(--secondary-color, #EFBF04)"/>
+        </svg>`,
+        
+        team: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100%" height="100%" preserveAspectRatio="xMidYMid meet" fill="var(--primary-color, #00205B)">
+            <circle cx="30" cy="25" r="10"/>
+            <circle cx="50" cy="20" r="10"/>
+            <circle cx="70" cy="25" r="10"/>
+            <path d="M30,35 L30,70 M20,45 L40,45" stroke="var(--primary-color, #00205B)" stroke-width="5" fill="none"/>
+            <path d="M50,30 L50,70 M40,45 L60,45" stroke="var(--primary-color, #00205B)" stroke-width="5" fill="none"/>
+            <path d="M70,35 L70,70 M60,45 L80,45" stroke="var(--primary-color, #00205B)" stroke-width="5" fill="none"/>
+            <rect x="15" y="70" width="70" height="10" fill="var(--secondary-color, #EFBF04)"/>
+        </svg>`,
+        
+        trophy: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100%" height="100%" preserveAspectRatio="xMidYMid meet" fill="var(--secondary-color, #EFBF04)">
+            <path d="M35,20 L65,20 L65,40 C65,50 70,55 75,55 L75,60 C65,60 65,70 65,70 L35,70 C35,70 35,60 25,60 L25,55 C30,55 35,50 35,40 Z" />
+            <rect x="40" y="70" width="20" height="10"/>
+            <rect x="30" y="80" width="40" height="5"/>
+            <rect x="35" y="10" width="30" height="10" fill="var(--primary-color, #00205B)"/>
+        </svg>`
+    };
 
     // Initialize the application
     async function init() {
