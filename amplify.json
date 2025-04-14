@@ -1,10 +1,32 @@
 {
+  "features": {
+    "graphqltransformer": {
+      "addmissingownerfields": true,
+      "improvepluralization": false,
+      "validatetypenamereservedwords": true,
+      "useexperimentalpipelinedtransformer": true,
+      "enableiterativegsiupdates": true,
+      "secondarykeyasgsi": true,
+      "skipoverridemutationinputtypes": true,
+      "transformerversion": 2,
+      "suppressschemamigrationprompt": true,
+      "securityenhancementnotification": false,
+      "showfieldauthnotification": false,
+      "usesubusernamefordefaultidentityclaim": true,
+      "usefieldnameforprimarykeyconnectionfield": false,
+      "enableautoindexqueryselections": true
+    },
+    "project": {
+      "overrides": true
+    }
+  },
   "api": {
     "routes": [
       {
         "path": "/api/*",
         "function": "api"
       }
-    ]
+    ],
+    "endpointInfo": true
   }
 }

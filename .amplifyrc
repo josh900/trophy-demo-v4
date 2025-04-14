@@ -1,0 +1,14 @@
+{
+  "providers": {
+    "awscloudformation": {
+      "AuthRoleName": "amplify-trophy-auth-role",
+      "UnauthRoleName": "amplify-trophy-unauth-role",
+      "DeploymentBucketName": "amplify-trophy-deployment"
+    }
+  },
+  "categories": {
+    "function": {
+      "api": {}
+    }
+  }
+} 
