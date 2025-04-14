@@ -5336,6 +5336,991 @@ Let's update your Lambda function to fix these issues:
 
 ---
 
+```diff
+   */
+  exports.handler = async (event) => {
++   // Log the event for debugging
+    console.log(`EVENT: ${JSON.stringify(event)}`);
+    
+-   try {
++   // Define CORS headers for all responses
++   const headers = {
++     'Access-Control-Allow-Origin': '*',
++     'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,x-requested-with',
++     'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
++     'Content-Type': 'application/json'
++   };
++   
++   try {
++     // Handle OPTIONS requests (CORS preflight)
++     if (event.httpMethod === 'OPTIONS') {
++       return {
++         statusCode: 200,
++         headers,
++         body: JSON.stringify({ message: 'CORS preflight successful' })
++       };
++     }
++     
+      // Safely check if path exists in the event
+-     const path = event?.path || '';
+-     
+-     if (path.includes('/api/healthcheck')) {
++     // Get path from different possible locations in the event object
++     let path = '';
++     if (event.path) {
++       path = event.path;
++     } else if (event.resource) {
++       path = event.resource;
++     } else if (event.requestContext && event.requestContext.path) {
++       path = event.requestContext.path;
++     } else if (typeof event === 'object' && event !== null) {
++       // If no obvious path property, try to extract from raw event
++       const eventString = JSON.stringify(event);
++       const pathMatch = eventString.match(/"path":"([^"]+)"/);
++       if (pathMatch && pathMatch[1]) {
++         path = pathMatch[1];
++       }
++     }
++     
++     console.log(`Resolved path: ${path}`);
++     
++     // Handle healthcheck endpoint
++     if (path.includes('/api/healthcheck') || path.includes('/healthcheck')) {
+        return {
+          statusCode: 200,
+-         headers: {
+-           "Access-Control-Allow-Origin": "*",
+-           "Access-Control-Allow-Headers": "*",
+-           "Content-Type": "application/json"
+-         },
+-         body: JSON.stringify({ status: 'ok' }),
++         headers,
++         body: JSON.stringify({ status: 'ok', timestamp: new Date().toISOString() }),
+        };
+      }
+  
+-     if (path.includes('/api/schools')) {
+-       return await handleAxiosRequest(
+-         `${budibaseApiUrl}/api/public/v1/tables/ta_44d3fc5be5e84c9b8e87d4ea7d79bad2/rows`
++     // API endpoint for schools
++     if (path.includes('/api/schools') || path.includes('/schools')) {
++       return await handleBudibaseRequest(
++         `${budibaseApiUrl}/api/public/v1/tables/ta_44d3fc5be5e84c9b8e87d4ea7d79bad2/rows`,
++         headers
+        );
+      }
+  
+-     if (path.includes('/api/teams')) {
+-       return await handleAxiosRequest(
+-         `${budibaseApiUrl}/api/public/v1/tables/ta_5c0c9dfe0a8640408db9c5e0e0b2c3c4/rows`
++     // API endpoint for teams
++     if (path.includes('/api/teams') || path.includes('/teams')) {
++       return await handleBudibaseRequest(
++         `${budibaseApiUrl}/api/public/v1/tables/ta_5c0c9dfe0a8640408db9c5e0e0b2c3c4/rows`,
++         headers
+        );
+      }
+  
+-     if (path.includes('/api/individuals')) {
+-       return await handleAxiosRequest(
+-         `${budibaseApiUrl}/api/public/v1/tables/ta_b09aa2ee7d844a85a93c9b3df795af2e/rows`
+-       );
++     // API endpoint for individuals
++     if (path.includes('/api/individuals') || path.includes('/individuals')) {
++       return await handleBudibaseRequest(
++         `${budibaseApiUrl}/api/public/v1/tables/ta_b09aa2ee7d844a85a93c9b3df795af2e/rows`,
++         headers
++       );
++     }
++     
++     // Support for combined axios endpoint
++     if (path.includes('/api/axios') || path.includes('/axios')) {
++       // Check if there's a type query parameter
++       const queryParams = event.queryStringParameters || {};
++       const type = queryParams.type || 'schools';
++       
++       let budibaseEndpoint = '';
++       switch (type) {
++         case 'teams':
++           budibaseEndpoint = `${budibaseApiUrl}/api/public/v1/tables/ta_5c0c9dfe0a8640408db9c5e0e0b2c3c4/rows`;
++           break;
++         case 'individuals':
++           budibaseEndpoint = `${budibaseApiUrl}/api/public/v1/tables/ta_b09aa2ee7d844a85a93c9b3df795af2e/rows`;
++           break;
++         default: // schools
++           budibaseEndpoint = `${budibaseApiUrl}/api/public/v1/tables/ta_44d3fc5be5e84c9b8e87d4ea7d79bad2/rows`;
++       }
++       
++       return await handleBudibaseRequest(budibaseEndpoint, headers);
+      }
+  
+      // Return 404 for unknown paths
+      return {
+        statusCode: 404,
+-       headers: {
+-         "Access-Control-Allow-Origin": "*",
+-         "Access-Control-Allow-Headers": "*",
+-         "Content-Type": "application/json"
+-       },
+-       body: JSON.stringify({ error: 'Not Found', message: `Path ${path} not found` }),
++       headers,
++       body: JSON.stringify({ 
++         error: 'Not Found', 
++         message: `Path ${path} not found`,
++         timestamp: new Date().toISOString()
++       }),
+      };
+    } catch (error) {
+      console.error('Error in API handler:', error);
+      return {
+        statusCode: 500,
+-       headers: {
+-         "Access-Control-Allow-Origin": "*",
+-         "Access-Control-Allow-Headers": "*",
+-         "Content-Type": "application/json"
+-       },
++       headers,
+        body: JSON.stringify({ 
+          error: 'Internal Server Error', 
+-         message: error.message || 'An unknown error occurred' 
++         message: error.message || 'An unknown error occurred',
++         timestamp: new Date().toISOString()
+        }),
+      };
+  
+  /**
+-  * Helper function to handle Axios requests to Budibase API
++  * Helper function to handle requests to Budibase API
+   * @param {string} url - The Budibase API URL
++  * @param {object} headers - Response headers to include
+   * @returns {Promise<Object>} - The API Gateway response object
+   */
+- async function handleAxiosRequest(url) {
++ async function handleBudibaseRequest(url, headers) {
+    try {
++     console.log(`Making request to Budibase API: ${url}`);
++     
++     // Set up the request with proper headers
+      const response = await axios.get(url, {
+        headers: {
+          'x-budibase-api-key': budibaseApiKey,
+          'x-budibase-app-id': budibaseAppId,
+-         'Content-Type': 'application/json'
++         'Content-Type': 'application/json',
++         'Accept': 'application/json'
+        }
+      });
++     
++     console.log(`Budibase API response status: ${response.status}`);
++     
++     // Format the response data
++     let responseData = { data: [] };
++     
++     if (response.data) {
++       if (Array.isArray(response.data)) {
++         responseData.data = response.data;
++       } else if (response.data.data) {
++         responseData.data = response.data.data;
++       } else {
++         responseData.data = [response.data];
++       }
++     }
+      
+      return {
+-       statusCode: response.status,
+-       headers: {
+-         "Access-Control-Allow-Origin": "*",
+-         "Access-Control-Allow-Headers": "*",
+-         "Content-Type": "application/json"
+-       },
+-       body: JSON.stringify(response.data),
++       statusCode: 200,
++       headers,
++       body: JSON.stringify(responseData)
+      };
+    } catch (error) {
+-     console.error('Error in Axios request:', error);
++     console.error('Error in Budibase request:', error);
+      
+      // Return appropriate error response
+      return {
+        statusCode,
+-       headers: {
+-         "Access-Control-Allow-Origin": "*",
+-         "Access-Control-Allow-Headers": "*",
+-         "Content-Type": "application/json"
+-       },
++       headers,
+        body: JSON.stringify({ 
+          error: statusCode === 404 ? 'Not Found' : 'Internal Server Error',
+-         message: errorMessage
+-       }),
+-     };
+-   }
+- }
+- 
+- /**
+-  * Handle request to the schools endpoint
+-  */
+- async function handleSchoolsRequest(headers) {
+-   try {
+-     // Budibase API options
+-     const options = {
+-       method: 'post',
+-       url: 'https://budibase.skoop.digital/api/public/v1/queries/query_datasource_plus_56025c99333e46b8a073e70585159c4c_4a3b9f6c024c4381afcf9f4e83f85f7d',
+-       headers: {
+-         'x-budibase-app-id': 'app_3ea495f0892c4311badfd934783afd94',
+-         'Content-Type': 'application/json',
+-         'Accept': 'application/json',
+-         'x-budibase-api-key': '69b1bc10c2d32ee607e44e4a30f7f5ea-b9dd09ff6c773a4628f737a0ab45f9e0304e6a8c85181a90f8ff74cc29c946528f373cc83f24ae20'
+-       },
+-       data: {}
+-     };
+- 
+-     const response = await axios(options);
+-     const formattedData = formatResponseData(response.data);
+-     
+-     return {
+-       statusCode: 200,
+-       headers,
+-       body: JSON.stringify(formattedData),
+-     };
+-   } catch (error) {
+-     console.error('Error in schools request:', error);
+-     return {
+-       statusCode: 500,
+-       headers,
+-       body: JSON.stringify({ 
+-         error: `Failed to fetch schools data: ${error.message}`,
+-         data: [] // Ensure data field exists even in error response
+-       }),
+-     };
+-   }
+- }
+- 
+- /**
+-  * Handle request to the teams endpoint
+-  */
+- async function handleTeamsRequest(headers) {
+-   try {
+-     // Budibase API options
+-     const options = {
+-       method: 'post',
+-       url: 'https://budibase.skoop.digital/api/public/v1/queries/query_datasource_plus_56025c99333e46b8a073e70585159c4c_a47c1c9912c34d15b67e49ec62908fa0',
+-       headers: {
+-         'x-budibase-app-id': 'app_3ea495f0892c4311badfd934783afd94',
+-         'Content-Type': 'application/json',
+-         'Accept': 'application/json',
+-         'x-budibase-api-key': '69b1bc10c2d32ee607e44e4a30f7f5ea-b9dd09ff6c773a4628f737a0ab45f9e0304e6a8c85181a90f8ff74cc29c946528f373cc83f24ae20'
+-       },
+-       data: {}
+-     };
+- 
+-     const response = await axios(options);
+-     const formattedData = formatResponseData(response.data);
+-     
+-     return {
+-       statusCode: 200,
+-       headers,
+-       body: JSON.stringify(formattedData),
+-     };
+-   } catch (error) {
+-     console.error('Error in teams request:', error);
+-     return {
+-       statusCode: 500,
+-       headers,
+-       body: JSON.stringify({ 
+-         error: `Failed to fetch teams data: ${error.message}`,
+-         data: [] // Ensure data field exists even in error response
+-       }),
+-     };
+-   }
+- }
+- 
+- /**
+-  * Handle request to the individuals endpoint
+-  */
+- async function handleIndividualsRequest(headers) {
+-   try {
+-     // Budibase API options
+-     const options = {
+-       method: 'post',
+-       url: 'https://budibase.skoop.digital/api/public/v1/queries/query_datasource_plus_56025c99333e46b8a073e70585159c4c_f62962e3b6ff47e690977d49cd6d6165',
+-       headers: {
+-         'x-budibase-app-id': 'app_3ea495f0892c4311badfd934783afd94',
+-         'Content-Type': 'application/json',
+-         'Accept': 'application/json',
+-         'x-budibase-api-key': '69b1bc10c2d32ee607e44e4a30f7f5ea-b9dd09ff6c773a4628f737a0ab45f9e0304e6a8c85181a90f8ff74cc29c946528f373cc83f24ae20'
+-       },
+-       data: {}
+-     };
+- 
+-     const response = await axios(options);
+-     const formattedData = formatResponseData(response.data);
+-     
+-     return {
+-       statusCode: 200,
+-       headers,
+-       body: JSON.stringify(formattedData),
+-     };
+-   } catch (error) {
+-     console.error('Error in individuals request:', error);
+-     return {
+-       statusCode: 500,
+-       headers,
+-       body: JSON.stringify({ 
+-         error: `Failed to fetch individuals data: ${error.message}`,
++         message: typeof errorMessage === 'string' ? errorMessage : JSON.stringify(errorMessage),
+          data: [] // Ensure data field exists even in error response
+        }),
+      };
+    }
+- }
+- 
+- /**
+-  * Format the response data into a consistent structure
+-  */
+- function formatResponseData(responseData) {
+-   // More flexible structure handling
+-   let formattedData = {
+-     data: []
+-   };
+-   
+-   // Try to extract data based on different possible structures
+-   if (Array.isArray(responseData)) {
+-     // Case 1: Array of objects at top level
+-     if (responseData.length > 0) {
+-       if (responseData[0].data) {
+-         // Case 1.1: First element has data property
+-         formattedData.data = responseData[0].data;
+-       } else {
+-         // Case 1.2: Array itself is the data
+-         formattedData.data = responseData;
+-       }
+-     }
+-   } else if (responseData && typeof responseData === 'object') {
+-     // Case 2: Object at top level
+-     if (responseData.data) {
+-       // Case 2.1: Has data property
+-       formattedData.data = responseData.data;
+-     } else {
+-       // Case 2.2: Object itself contains the data
+-       formattedData.data = [responseData];
+-     }
+-   }
+-   
+-   return formattedData;
+  } 
+```
+
+---
+
+Now let's redeploy the Lambda function to apply these changes:
+
+---
+
+```bash
+cd /c%3A/Users/JoshS/Documents/GitHub/trophy-demo-v4 && amplify push
+```
+
+---
+
+Let's check the terminal's path and try again:
+
+---
+
+```bash
+cd
+```
+
+---
+
+Let's try with a simpler shell command approach:
+
+---
+
+Cancelled
+
+---
+
+
+
+---
+
+_**User**_
+
+I've made the change in the repo, do I need to run cd /c%3A/Users/JoshS/Documents/GitHub/trophy-demo-v4 && amplify push to redeploy or can I just let the amplify redeploy on commit
+
+---
+
+_**Assistant**_
+
+<think>
+The user is asking if they need to manually run `amplify push` to deploy the changes they made to the Lambda function, or if they can rely on the automatic deployment that happens when they commit to the repository.
+
+Based on the information provided, the user is working with an AWS Amplify project that has been set up with CI/CD. This is indicated by the build logs shared earlier showing an Amplify deployment process. The build logs show that when code is committed to the repository, Amplify automatically builds and deploys the changes.
+
+So, there are two options for the user:
+1. Manually push the changes using `amplify push` from their local environment
+2. Commit the changes to the repository and let Amplify's CI/CD pipeline handle the deployment
+
+Since they've mentioned they've already "made the change in the repo", this implies they've committed the change to their repository. If that's the case, they can likely rely on Amplify's automatic redeployment triggered by the commit.
+</think>
+
+You don't need to run `amplify push` if you've already committed the changes to your GitHub repository. AWS Amplify has continuous deployment set up for your project, so it will automatically detect the commit and trigger a new build and deployment.
+
+From your build logs shared earlier, it's clear that Amplify is configured to automatically:
+1. Detect changes in your repository
+2. Build the backend resources (including your Lambda function)
+3. Deploy the updated resources
+
+You can monitor the deployment status in the Amplify Console. You should see a new deployment being processed shortly after your commit. The build logs will show the progress, and you'll be able to see when the new function code is deployed.
+
+If for some reason the automatic deployment doesn't trigger, or if you want to immediately test the changes without waiting for the CI/CD pipeline, then you could run `amplify push` locally. But in most cases, it's best to let the automated process handle it to ensure consistency between your repository and deployed environment.
+
+---
+
+_**User**_
+
+build logs:
+65
+
+2025-04-14T15:16:56.411Z [INFO]: 
+
+66
+
+2025-04-14T15:16:56.540Z [INFO]: ✅ Initialized your environment successfully.
+
+67
+
+2025-04-14T15:16:56.541Z [INFO]: ✅ Your project has been successfully initialized and connected to the cloud!
+
+68
+
+                                 Some next steps:
+
+69
+
+                                 "amplify status" will show you what you've added already and if it's locally configured or deployed
+
+70
+
+                                 "amplify add <category>" will allow you to add features like user login or a backend API
+
+71
+
+                                 "amplify push" will build all your local backend resources and provision it in the cloud
+
+72
+
+                                 "amplify console" to open the Amplify Console and view your project status
+
+73
+
+                                 "amplify publish" will build all your local backend and frontend resources (if you have hosting category added) and provision it in the cloud
+
+74
+
+                                 Pro tip:
+
+75
+
+                                 Try "amplify add api" to create a backend API and then "amplify push" to deploy everything
+
+76
+
+2025-04-14T15:16:57.989Z [INFO]: ## Completed Backend Build
+
+77
+
+2025-04-14T15:16:57.994Z [INFO]: ## Starting Frontend Build
+
+78
+
+                                 # Starting phase: build
+
+79
+
+2025-04-14T15:16:57.994Z [INFO]: # Executing command: npm install
+
+80
+
+2025-04-14T15:17:00.365Z [INFO]: added 108 packages, and audited 109 packages in 2s
+
+81
+
+2025-04-14T15:17:00.371Z [INFO]: 30 packages are looking for funding
+
+82
+
+                                 run `npm fund` for details
+
+83
+
+                                 found 0 vulnerabilities
+
+84
+
+2025-04-14T15:17:00.382Z [INFO]: # Executing command: npm run build
+
+85
+
+2025-04-14T15:17:00.667Z [INFO]: > saginaw-trophy-case@1.0.0 build
+
+86
+
+                                 > echo 'No build step required for static site'
+
+87
+
+2025-04-14T15:17:00.673Z [INFO]: No build step required for static site
+
+88
+
+2025-04-14T15:17:00.681Z [INFO]: # Completed phase: build
+
+89
+
+                                 ## Completed Frontend Build
+
+90
+
+2025-04-14T15:17:00.950Z [INFO]: ## Build completed successfully
+
+91
+
+2025-04-14T15:17:00.954Z [INFO]: Found customHeaders section in amplify.yml, applying custom headers...
+
+92
+
+2025-04-14T15:17:00.954Z [WARNING]: [DEPRECATION WARNING] using amplify.yml to modify custom headers is being deprecated.
+
+93
+
+2025-04-14T15:17:00.954Z [WARNING]: Going forward, in order to configure your custom headers via deploy, please use customHttp.yml instead.
+
+94
+
+2025-04-14T15:17:00.954Z [WARNING]: Learn more: https://docs.aws.amazon.com/amplify/latest/userguide/custom-headers.html
+
+95
+
+2025-04-14T15:17:00.954Z [INFO]: # Found custom headers config file.
+
+96
+
+2025-04-14T15:17:01.095Z [INFO]: # Starting build artifact upload process...
+
+97
+
+2025-04-14T15:17:02.008Z [INFO]: # Uploading build artifact '__artifacts.zip'...
+
+98
+
+2025-04-14T15:17:02.219Z [INFO]: # Build artifact upload completed
+
+99
+
+2025-04-14T15:17:02.219Z [INFO]: # Starting environment caching...
+
+100
+
+2025-04-14T15:17:02.220Z [INFO]: # Uploading environment cache artifact...
+
+101
+
+2025-04-14T15:17:02.325Z [INFO]: # Uploaded environment cache artifact
+
+102
+
+2025-04-14T15:17:02.325Z [INFO]: # Environment caching completed
+
+103
+
+104
+
+
+app errors:
+Removing unpermitted intrinsics
+(index):21 Using hardcoded API Gateway URL: https://72w9r9ffd8.execute-api.us-east-1.amazonaws.com/Prod
+(index):26 
+            
+            
+            GET https://main.d3u21ki4rjrkyy.amplifyapp.com/.amplify-hosting/api-info.json 404 (Not Found)
+detectApiEndpoint @ (index):26
+(anonymous) @ (index):102
+[NEW] Explain Console errors by using Copilot in Edge: click
+         
+         to explain an error. 
+        Learn more
+        Don't show again
+(index):37  Error fetching API Gateway URL: SyntaxError: Unexpected token '<', "<!DOCTYPE "... is not valid JSON
+(anonymous) @ (index):37
+Promise.catch
+detectApiEndpoint @ (index):36
+(anonymous) @ (index):102
+(index):38 Using hardcoded API Gateway URL
+app.js:410 Axios schools response: {data: Array(1)}
+app.js:418  Axios attempt failed: Error: No valid data in axios response
+    at fetchSchools (app.js:416:23)
+    at async init (app.js:325:13)
+fetchSchools @ app.js:418
+await in fetchSchools
+init @ app.js:325
+(anonymous) @ app.js:1409
+main.d3u21ki4rjrkyy.amplifyapp.com/:1  Access to fetch at 'https://72w9r9ffd8.execute-api.us-east-1.amazonaws.com/Prod/api/healthcheck' from origin 'https://main.d3u21ki4rjrkyy.amplifyapp.com' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.
+(index):52 
+            
+            
+            GET https://72w9r9ffd8.execute-api.us-east-1.amazonaws.com/Prod/api/healthcheck net::ERR_FAILED 403 (Forbidden)
+checkApiHealth @ (index):52
+setTimeout
+(anonymous) @ (index):105
+(index):64  API healthcheck failed: TypeError: Failed to fetch
+    at checkApiHealth ((index):52:13)
+(anonymous) @ (index):64
+Promise.catch
+checkApiHealth @ (index):63
+setTimeout
+(anonymous) @ (index):105
+(index):65 Trying alternative URLs...
+(index):84 
+            
+            
+            GET https://main.d3u21ki4rjrkyy.amplifyapp.com/api/healthcheck/ 404 (Not Found)
+(anonymous) @ (index):84
+setTimeout
+(anonymous) @ (index):83
+(anonymous) @ (index):81
+Promise.catch
+checkApiHealth @ (index):63
+setTimeout
+(anonymous) @ (index):105
+main.d3u21ki4rjrkyy.amplifyapp.com/:1  Access to fetch at 'https://api.main.d3u21ki4rjrkyy.amplifyapp.com/api/healthcheck' from origin 'https://main.d3u21ki4rjrkyy.amplifyapp.com' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.
+(index):84 
+            
+            
+            GET https://api.main.d3u21ki4rjrkyy.amplifyapp.com/api/healthcheck net::ERR_FAILED 404 (Not Found)
+(anonymous) @ (index):84
+setTimeout
+(anonymous) @ (index):83
+(anonymous) @ (index):81
+Promise.catch
+checkApiHealth @ (index):63
+setTimeout
+(anonymous) @ (index):105
+(index):93 API endpoint not found at: https://api.main.d3u21ki4rjrkyy.amplifyapp.com
+(index):84 
+            
+            
+            GET https://api-main.us-east-1.amazonaws.com/Prod/api/healthcheck net::ERR_NAME_NOT_RESOLVED
+(anonymous) @ (index):84
+setTimeout
+(anonymous) @ (index):83
+(anonymous) @ (index):81
+Promise.catch
+checkApiHealth @ (index):63
+setTimeout
+(anonymous) @ (index):105
+(index):93 API endpoint not found at: https://api-main.us-east-1.amazonaws.com/Prod
+app.js:444 Axios teams response: {data: Array(1)}
+app.js:452  Axios attempt failed: Error: No valid data in axios response
+    at fetchTeams (app.js:450:23)
+    at async init (app.js:335:13)
+fetchTeams @ app.js:452
+await in fetchTeams
+init @ app.js:335
+await in init
+(anonymous) @ app.js:1409
+main.d3u21ki4rjrkyy.amplifyapp.com/:1  Access to fetch at 'https://72w9r9ffd8.execute-api.us-east-1.amazonaws.com/Prod/api/healthcheck' from origin 'https://main.d3u21ki4rjrkyy.amplifyapp.com' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.
+(index):84 
+            
+            
+            GET https://72w9r9ffd8.execute-api.us-east-1.amazonaws.com/Prod/api/healthcheck net::ERR_FAILED 403 (Forbidden)
+(anonymous) @ (index):84
+setTimeout
+(anonymous) @ (index):83
+(anonymous) @ (index):81
+Promise.catch
+checkApiHealth @ (index):63
+setTimeout
+(anonymous) @ (index):105
+(index):93 API endpoint not found at: https://72w9r9ffd8.execute-api.us-east-1.amazonaws.com/Prod
+app.js:478 Axios individuals response: {data: Array(1)}
+app.js:486  Axios attempt failed: Error: No valid data in axios response
+    at fetchIndividuals (app.js:484:23)
+    at async init (app.js:345:13)
+fetchIndividuals @ app.js:486
+await in fetchIndividuals
+init @ app.js:345
+await in init
+(anonymous) @ app.js:1409
+
+Logs - api-main:
+INIT_START Runtime Version: nodejs:16.v70	Runtime Version ARN: arn:aws:lambda:us-east-1::runtime:46b99f635743b15febf77bc6d1f44226c4c9a8f3011afaeab9001daeca28753c
+START RequestId: 0c8c9485-e3b6-4187-bae2-dd226905ef3a Version: $LATEST
+END RequestId: 0c8c9485-e3b6-4187-bae2-dd226905ef3a
+REPORT RequestId: 0c8c9485-e3b6-4187-bae2-dd226905ef3a	Duration: 9.54 ms	Billed Duration: 10 ms	Memory Size: 256 MB	Max Memory Used: 70 MB	Init Duration: 282.29 ms	
+START RequestId: fc409be0-6de4-4aea-a6c2-e61f72c74ced Version: $LATEST
+END RequestId: fc409be0-6de4-4aea-a6c2-e61f72c74ced
+REPORT RequestId: fc409be0-6de4-4aea-a6c2-e61f72c74ced	Duration: 1933.78 ms	Billed Duration: 1934 ms	Memory Size: 256 MB	Max Memory Used: 72 MB	
+START RequestId: 16365556-e96b-4cbb-a282-6aaced25e734 Version: $LATEST
+END RequestId: 16365556-e96b-4cbb-a282-6aaced25e734
+REPORT RequestId: 16365556-e96b-4cbb-a282-6aaced25e734	Duration: 645.52 ms	Billed Duration: 646 ms	Memory Size: 256 MB	Max Memory Used: 72 MB	
+START RequestId: ef911500-78ca-4bc7-a052-d8fe04dc99e0 Version: $LATEST
+2025-04-14T14:51:34.967Z	ef911500-78ca-4bc7-a052-d8fe04dc99e0	ERROR	Error in API handler: TypeError: Cannot read properties of undefined (reading 'includes')
+    at Runtime.exports.handler (/var/task/index.js:26:20)
+    at Runtime.handleOnceNonStreaming (file:///var/runtime/index.mjs:1173:29)
+END RequestId: ef911500-78ca-4bc7-a052-d8fe04dc99e0
+REPORT RequestId: ef911500-78ca-4bc7-a052-d8fe04dc99e0	Duration: 87.17 ms	Billed Duration: 88 ms	Memory Size: 256 MB	Max Memory Used: 72 MB	
+
+
+Executing function: succeeded (logs )
+Details
+{
+  "statusCode": 404,
+  "headers": {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Headers": "Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,x-requested-with",
+    "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
+    "Content-Type": "application/json"
+  },
+  "body": "{\"error\":\"Not Found\",\"message\":\"Path  not found\",\"timestamp\":\"2025-04-14T15:19:50.846Z\"}"
+}
+Summary
+Code SHA-256
+kuv03nGvpUhjrxzto5BbBhy5njxTSLQYybaQjfL+V80=
+Function version
+$LATEST
+Duration
+1.83 ms
+Resources configured
+256 MB
+Execution time
+0 seconds ago
+Request ID
+d100541c-bb1a-45cb-a049-a00512efe313
+Billed duration
+2 ms
+Max memory used
+75 MB
+Log output
+The area below shows the last 4 KB of the execution log. Click here  to view the corresponding CloudWatch log group.
+2025-04-14T15:19:50.846Z	d100541c-bb1a-45cb-a049-a00512efe313	INFO	EVENT: {"key1":"value1","key2":"value2","key3":"value3"}
+2025-04-14T15:19:50.846Z	d100541c-bb1a-45cb-a049-a00512efe313	INFO	Resolved path: 
+START RequestId: d100541c-bb1a-45cb-a049-a00512efe313 Version: $LATEST
+END RequestId: d100541c-bb1a-45cb-a049-a00512efe313
+REPORT RequestId: d100541c-bb1a-45cb-a049-a00512efe313	Duration: 1.83 ms	Billed Duration: 2 ms	Memory Size: 256 MB	Max Memory Used: 75 MB	
+
+/api/axios - GET method test results
+Request
+/api/axios
+Latency ms
+92
+Status
+200
+Response body
+{"data":["<html>\n\n  <head>\n    <title>Trophy</title><meta charset=\"utf8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, viewport-fit=cover\"><meta name=\"title\" content=\"Trophy - built with Budibase\"><meta name=\"description\" content=\"\"><meta property=\"og:site_name\" content=\"Budibase\"><meta property=\"og:title\" content=\"Trophy - built with Budibase\"><meta property=\"og:description\" content=\"\"><meta property=\"og:type\" content=\"website\"><meta property=\"og:image\" content=\"https://res.cloudinary.com/daog6scxm/image/upload/v1698759482/meta-images/plain-branded-meta-image-coral_ocxmgu.png\"><meta property=\"twitter:card\" content=\"summary_large_image\"><meta property=\"twitter:site\" content=\"@budibase\"><meta property=\"twitter:image\" content=\"https://res.cloudinary.com/daog6scxm/image/upload/v1698759482/meta-images/plain-branded-meta-image-coral_ocxmgu.png\"><meta property=\"twitter:image:alt\" content=\"Trophy - built with Budibase\"><meta property=\"twitter:title\" content=\"Trophy - built with Budibase\"><meta property=\"twitter:description\" content=\"\"><link rel=\"icon\" type=\"image/png\" href=\"/files/signed/global/settings/faviconUrl?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=v2UfRcHB39xwXa5mhjjJCTRbEb44CtFiVsNWV65EQjdoqVX4gw33FbJr53EoiD9a%2F20250414%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20250414T152016Z&X-Amz-Expires=3600&X-Amz-Signature=6a92c8d5388de0146a6ef06add94997036e65c5735934ba113ac89a72fe0542e&X-Amz-SignedHeaders=host\"><link href=\"/builder/fonts/source-sans-pro/400.css\" rel=\"stylesheet\"><link href=\"/builder/fonts/source-sans-pro/600.css\" rel=\"stylesheet\"><link href=\"/builder/fonts/source-sans-pro/700.css\" rel=\"stylesheet\"><link href=\"/builder/fonts/remixicon.css\" rel=\"stylesheet\"><style>html,\n    body {\n      height: 100%;\n      width: 100%;\n      margin: 0;\n      padding: 0;\n    }\n    *,\n    *:before,\n    *:after {\n      box-sizing: border-box;\n    }\n\n    #error {\n      position: absolute;\n      top: 0;\n      left: 0;\n      height: 100vh;\n      width: 100vw;\n      display: none;\n      font-family: \"Source Sans Pro\", sans-serif;\n      flex-direction: column;\n      justify-content: center;\n      align-items: center;\n      background: #222;\n      text-align: center;\n      padding: 2rem;\n      gap: 2rem;\n    }\n    #error h1,\n    #error h2 {\n      margin: 0;\n    }\n    #error h1 {\n      color: #ccc;\n      font-size: 3rem;\n      font-weight: 600;\n    }\n    #error h2 {\n      color: #888;\n      font-weight: 400;\n    }\n  </style>\n  </head>\n\n  <script>\n    window[\"##BUDIBASE_APP_ID##\"] = \"app_3ea495f0892c4311badfd934783afd94\"\n    window[\"##BUDIBASE_APP_EMBEDDED##\"] = \"false\"\n  </script>\n\n  \n\n<body id=\"app\"><div id=\"error\"><h1>There was an error loading your app</h1>\n      <h2>The Budibase client library could not be loaded. Try republishing your\n        app.\n      </h2></div>\n  <script type=\"application/javascript\">window.INIT_TIME = Date.now()\n  </script>\n  \n  <script type=\"application/javascript\" src=\"/api/assets/client?appId=app_3ea495f0892c4311badfd934783afd94&version=2.14.8\"></script>\n  \n  \n  \n  <script type=\"application/javascript\">if (window.loadBudibase) {\n      window.loadBudibase()\n    } else {\n      console.error(\"Failed to load the Budibase client\")\n      document.getElementById(\"error\").style.display = \"flex\"\n    }\n  </script></body>\n</html>"]}
+Response headers
+{
+  "Access-Control-Allow-Headers": "Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,x-requested-with",
+  "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
+  "Access-Control-Allow-Origin": "*",
+  "Content-Type": "application/json",
+  "X-Amzn-Trace-Id": "Root=1-67fd27b0-44ac1e37c531f252eed31e2c;Parent=3e7d34387bfdf520;Sampled=0;Lineage=1:d3ab409f:0"
+}
+Logs
+Execution log for request 5483b588-ff45-4baa-97bb-cad5965225e5
+Mon Apr 14 15:20:16 UTC 2025 : Starting execution for request: 5483b588-ff45-4baa-97bb-cad5965225e5
+Mon Apr 14 15:20:16 UTC 2025 : HTTP Method: GET, Resource Path: /api/axios
+Mon Apr 14 15:20:16 UTC 2025 : Method request path: {}
+Mon Apr 14 15:20:16 UTC 2025 : Method request query string: {}
+Mon Apr 14 15:20:16 UTC 2025 : Method request headers: {}
+Mon Apr 14 15:20:16 UTC 2025 : Method request body before transformations: 
+Mon Apr 14 15:20:16 UTC 2025 : Endpoint request URI: https://lambda.us-east-1.amazonaws.com/2015-03-31/functions/arn:aws:lambda:us-east-1:984369402869:function:api-main/invocations
+Mon Apr 14 15:20:16 UTC 2025 : Endpoint request headers: {X-Amz-Date=20250414T152016Z, x-amzn-apigateway-api-id=72w9r9ffd8, Accept=application/json, User-Agent=AmazonAPIGateway_72w9r9ffd8, Host=lambda.us-east-1.amazonaws.com, X-Amz-Content-Sha256=076a799ae7c03db267b34b86ed1a624a28ea9bc6b920d08b3577a82cfd02f455, X-Amzn-Trace-Id=Root=1-67fd27b0-44ac1e37c531f252eed31e2c, x-amzn-lambda-integration-tag=5483b588-ff45-4baa-97bb-cad5965225e5, Authorization=*********************************************************************************************************************************************************************************************************************************************************************************************************************************************94fd50, X-Amz-Source-Arn=arn:aws:execute-api:us-east-1:984369402869:72w9r9ffd8/test-invoke-stage/GET/api/axios, X-Amz-Security-Token=IQoJb3JpZ2luX2VjEI///////////wEaCXVzLWVhc3QtMSJIMEYCIQCCMNvYOeXe3OawQMnzeXUvuPpE+85i/futfs+F3ZopSgIhAN3D9rLCA0HKvUjtmNGP+d8RemJEOn+A8RFM [TRUNCATED]
+Mon Apr 14 15:20:16 UTC 2025 : Endpoint request body after transformations: {"resource":"/api/axios","path":"/api/axios","httpMethod":"GET","headers":null,"multiValueHeaders":null,"queryStringParameters":null,"multiValueQueryStringParameters":null,"pathParameters":null,"stageVariables":null,"requestContext":{"resourceId":"qw24y6","resourcePath":"/api/axios","httpMethod":"GET","extendedRequestId":"JBMjnFW3IAMF9BA=","requestTime":"14/Apr/2025:15:20:16 +0000","path":"/api/axios","accountId":"984369402869","protocol":"HTTP/1.1","stage":"test-invoke-stage","domainPrefix":"testPrefix","requestTimeEpoch":1744644016394,"requestId":"5483b588-ff45-4baa-97bb-cad5965225e5","identity":{"cognitoIdentityPoolId":null,"cognitoIdentityId":null,"apiKey":"test-invoke-api-key","principalOrgId":null,"cognitoAuthenticationType":null,"userArn":"arn:aws:iam::984369402869:root","apiKeyId":"test-invoke-api-key-id","userAgent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36 Edg/136.0.0.0","accountId":"9 [TRUNCATED]
+Mon Apr 14 15:20:16 UTC 2025 : Sending request to https://lambda.us-east-1.amazonaws.com/2015-03-31/functions/arn:aws:lambda:us-east-1:984369402869:function:api-main/invocations
+Mon Apr 14 15:20:16 UTC 2025 : Received response. Status: 200, Integration latency: 88 ms
+Mon Apr 14 15:20:16 UTC 2025 : Endpoint response headers: {Date=Mon, 14 Apr 2025 15:20:16 GMT, Content-Type=application/json, Content-Length=4076, Connection=keep-alive, x-amzn-RequestId=28b9a4c7-63ae-4322-9f91-5c512041e0fa, x-amzn-Remapped-Content-Length=0, X-Amz-Executed-Version=$LATEST, X-Amzn-Trace-Id=Root=1-67fd27b0-44ac1e37c531f252eed31e2c;Parent=3e7d34387bfdf520;Sampled=0;Lineage=1:d3ab409f:0}
+Mon Apr 14 15:20:16 UTC 2025 : Endpoint response body before transformations: {"statusCode":200,"headers":{"Access-Control-Allow-Origin":"*","Access-Control-Allow-Headers":"Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,x-requested-with","Access-Control-Allow-Methods":"GET,POST,OPTIONS","Content-Type":"application/json"},"body":"{\"data\":[\"<html>\\n\\n  <head>\\n    <title>Trophy</title><meta charset=\\\"utf8\\\"><meta name=\\\"viewport\\\" content=\\\"width=device-width, initial-scale=1.0, viewport-fit=cover\\\"><meta name=\\\"title\\\" content=\\\"Trophy - built with Budibase\\\"><meta name=\\\"description\\\" content=\\\"\\\"><meta property=\\\"og:site_name\\\" content=\\\"Budibase\\\"><meta property=\\\"og:title\\\" content=\\\"Trophy - built with Budibase\\\"><meta property=\\\"og:description\\\" content=\\\"\\\"><meta property=\\\"og:type\\\" content=\\\"website\\\"><meta property=\\\"og:image\\\" content=\\\"https://res.cloudinary.com/daog6scxm/image/upload/v1698759482/meta-images/plain-branded-meta-image-cor [TRUNCATED]
+Mon Apr 14 15:20:16 UTC 2025 : Method response body after transformations: {"data":["<html>\n\n  <head>\n    <title>Trophy</title><meta charset=\"utf8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, viewport-fit=cover\"><meta name=\"title\" content=\"Trophy - built with Budibase\"><meta name=\"description\" content=\"\"><meta property=\"og:site_name\" content=\"Budibase\"><meta property=\"og:title\" content=\"Trophy - built with Budibase\"><meta property=\"og:description\" content=\"\"><meta property=\"og:type\" content=\"website\"><meta property=\"og:image\" content=\"https://res.cloudinary.com/daog6scxm/image/upload/v1698759482/meta-images/plain-branded-meta-image-coral_ocxmgu.png\"><meta property=\"twitter:card\" content=\"summary_large_image\"><meta property=\"twitter:site\" content=\"@budibase\"><meta property=\"twitter:image\" content=\"https://res.cloudinary.com/daog6scxm/image/upload/v1698759482/meta-images/plain-branded-meta-image-coral_ocxmgu.png\"><meta property=\"twitter:image:alt\" content=\"Trophy - [TRUNCATED]
+Mon Apr 14 15:20:16 UTC 2025 : Method response headers: {Access-Control-Allow-Origin=*, Access-Control-Allow-Headers=Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,x-requested-with, Access-Control-Allow-Methods=GET,POST,OPTIONS, Content-Type=application/json, X-Amzn-Trace-Id=Root=1-67fd27b0-44ac1e37c531f252eed31e2c;Parent=3e7d34387bfdf520;Sampled=0;Lineage=1:d3ab409f:0}
+Mon Apr 14 15:20:16 UTC 2025 : Successfully completed execution
+Mon Apr 14 15:20:16 UTC 2025 : Method completed with status: 200
+
+/api/healthcheck - GET method test results
+Request
+/api/healthcheck
+Latency ms
+25
+Status
+200
+Response body
+{"status":"ok","timestamp":"2025-04-14T15:20:29.027Z"}
+Response headers
+{
+  "Access-Control-Allow-Headers": "Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,x-requested-with",
+  "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
+  "Access-Control-Allow-Origin": "*",
+  "Content-Type": "application/json",
+  "X-Amzn-Trace-Id": "Root=1-67fd27bd-3f0f1500f1ab35467f4592eb;Parent=2fdb2ad56ffc17a4;Sampled=0;Lineage=1:d3ab409f:0"
+}
+Logs
+Execution log for request 182716d8-de25-4028-b542-b8f21a9b8d1f
+Mon Apr 14 15:20:29 UTC 2025 : Starting execution for request: 182716d8-de25-4028-b542-b8f21a9b8d1f
+Mon Apr 14 15:20:29 UTC 2025 : HTTP Method: GET, Resource Path: /api/healthcheck
+Mon Apr 14 15:20:29 UTC 2025 : Method request path: {}
+Mon Apr 14 15:20:29 UTC 2025 : Method request query string: {}
+Mon Apr 14 15:20:29 UTC 2025 : Method request headers: {}
+Mon Apr 14 15:20:29 UTC 2025 : Method request body before transformations: 
+Mon Apr 14 15:20:29 UTC 2025 : Endpoint request URI: https://lambda.us-east-1.amazonaws.com/2015-03-31/functions/arn:aws:lambda:us-east-1:984369402869:function:api-main/invocations
+Mon Apr 14 15:20:29 UTC 2025 : Endpoint request headers: {X-Amz-Date=20250414T152029Z, x-amzn-apigateway-api-id=72w9r9ffd8, Accept=application/json, User-Agent=AmazonAPIGateway_72w9r9ffd8, Host=lambda.us-east-1.amazonaws.com, X-Amz-Content-Sha256=1d669c12cf6141d03e263c29a6f2ffaa25d6caf2a1b94f6be624bfc2eb9487d8, X-Amzn-Trace-Id=Root=1-67fd27bd-3f0f1500f1ab35467f4592eb, x-amzn-lambda-integration-tag=182716d8-de25-4028-b542-b8f21a9b8d1f, Authorization=*********************************************************************************************************************************************************************************************************************************************************************************************************************************************aa8ed4, X-Amz-Source-Arn=arn:aws:execute-api:us-east-1:984369402869:72w9r9ffd8/test-invoke-stage/GET/api/healthcheck, X-Amz-Security-Token=IQoJb3JpZ2luX2VjEI7//////////wEaCXVzLWVhc3QtMSJHMEUCIQDcfybb2QphFpPDZchAfTR+WM2UPU+sQFL8eU+7vijIKwIgEGjOYROdG1C6nGG9FiB2c1lTib/Coi [TRUNCATED]
+Mon Apr 14 15:20:29 UTC 2025 : Endpoint request body after transformations: {"resource":"/api/healthcheck","path":"/api/healthcheck","httpMethod":"GET","headers":null,"multiValueHeaders":null,"queryStringParameters":null,"multiValueQueryStringParameters":null,"pathParameters":null,"stageVariables":null,"requestContext":{"resourceId":"hg6ezm","resourcePath":"/api/healthcheck","httpMethod":"GET","extendedRequestId":"JBMlmFgQIAMFmYw=","requestTime":"14/Apr/2025:15:20:29 +0000","path":"/api/healthcheck","accountId":"984369402869","protocol":"HTTP/1.1","stage":"test-invoke-stage","domainPrefix":"testPrefix","requestTimeEpoch":1744644029009,"requestId":"182716d8-de25-4028-b542-b8f21a9b8d1f","identity":{"cognitoIdentityPoolId":null,"cognitoIdentityId":null,"apiKey":"test-invoke-api-key","principalOrgId":null,"cognitoAuthenticationType":null,"userArn":"arn:aws:iam::984369402869:root","apiKeyId":"test-invoke-api-key-id","userAgent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36 Edg/1 [TRUNCATED]
+Mon Apr 14 15:20:29 UTC 2025 : Sending request to https://lambda.us-east-1.amazonaws.com/2015-03-31/functions/arn:aws:lambda:us-east-1:984369402869:function:api-main/invocations
+Mon Apr 14 15:20:29 UTC 2025 : Received response. Status: 200, Integration latency: 21 ms
+Mon Apr 14 15:20:29 UTC 2025 : Endpoint response headers: {Date=Mon, 14 Apr 2025 15:20:29 GMT, Content-Type=application/json, Content-Length=339, Connection=keep-alive, x-amzn-RequestId=1cbc7843-837a-45d0-a83c-398d39ea3db2, x-amzn-Remapped-Content-Length=0, X-Amz-Executed-Version=$LATEST, X-Amzn-Trace-Id=Root=1-67fd27bd-3f0f1500f1ab35467f4592eb;Parent=2fdb2ad56ffc17a4;Sampled=0;Lineage=1:d3ab409f:0}
+Mon Apr 14 15:20:29 UTC 2025 : Endpoint response body before transformations: {"statusCode":200,"headers":{"Access-Control-Allow-Origin":"*","Access-Control-Allow-Headers":"Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,x-requested-with","Access-Control-Allow-Methods":"GET,POST,OPTIONS","Content-Type":"application/json"},"body":"{\"status\":\"ok\",\"timestamp\":\"2025-04-14T15:20:29.027Z\"}"}
+Mon Apr 14 15:20:29 UTC 2025 : Method response body after transformations: {"status":"ok","timestamp":"2025-04-14T15:20:29.027Z"}
+Mon Apr 14 15:20:29 UTC 2025 : Method response headers: {Access-Control-Allow-Origin=*, Access-Control-Allow-Headers=Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,x-requested-with, Access-Control-Allow-Methods=GET,POST,OPTIONS, Content-Type=application/json, X-Amzn-Trace-Id=Root=1-67fd27bd-3f0f1500f1ab35467f4592eb;Parent=2fdb2ad56ffc17a4;Sampled=0;Lineage=1:d3ab409f:0}
+Mon Apr 14 15:20:29 UTC 2025 : Successfully completed execution
+Mon Apr 14 15:20:29 UTC 2025 : Method completed with status: 200
+
+/api/schools - GET method test results
+Request
+/api/schools
+Latency ms
+90
+Status
+200
+Response body
+{"data":["<html>\n\n  <head>\n    <title>Trophy</title><meta charset=\"utf8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, viewport-fit=cover\"><meta name=\"title\" content=\"Trophy - built with Budibase\"><meta name=\"description\" content=\"\"><meta property=\"og:site_name\" content=\"Budibase\"><meta property=\"og:title\" content=\"Trophy - built with Budibase\"><meta property=\"og:description\" content=\"\"><meta property=\"og:type\" content=\"website\"><meta property=\"og:image\" content=\"https://res.cloudinary.com/daog6scxm/image/upload/v1698759482/meta-images/plain-branded-meta-image-coral_ocxmgu.png\"><meta property=\"twitter:card\" content=\"summary_large_image\"><meta property=\"twitter:site\" content=\"@budibase\"><meta property=\"twitter:image\" content=\"https://res.cloudinary.com/daog6scxm/image/upload/v1698759482/meta-images/plain-branded-meta-image-coral_ocxmgu.png\"><meta property=\"twitter:image:alt\" content=\"Trophy - built with Budibase\"><meta property=\"twitter:title\" content=\"Trophy - built with Budibase\"><meta property=\"twitter:description\" content=\"\"><link rel=\"icon\" type=\"image/png\" href=\"/files/signed/global/settings/faviconUrl?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=v2UfRcHB39xwXa5mhjjJCTRbEb44CtFiVsNWV65EQjdoqVX4gw33FbJr53EoiD9a%2F20250414%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20250414T152041Z&X-Amz-Expires=3600&X-Amz-Signature=8dfa2a75610431355cb0117675c75ac4fb5d58e17391fbbf7642a9d50551aaf2&X-Amz-SignedHeaders=host\"><link href=\"/builder/fonts/source-sans-pro/400.css\" rel=\"stylesheet\"><link href=\"/builder/fonts/source-sans-pro/600.css\" rel=\"stylesheet\"><link href=\"/builder/fonts/source-sans-pro/700.css\" rel=\"stylesheet\"><link href=\"/builder/fonts/remixicon.css\" rel=\"stylesheet\"><style>html,\n    body {\n      height: 100%;\n      width: 100%;\n      margin: 0;\n      padding: 0;\n    }\n    *,\n    *:before,\n    *:after {\n      box-sizing: border-box;\n    }\n\n    #error {\n      position: absolute;\n      top: 0;\n      left: 0;\n      height: 100vh;\n      width: 100vw;\n      display: none;\n      font-family: \"Source Sans Pro\", sans-serif;\n      flex-direction: column;\n      justify-content: center;\n      align-items: center;\n      background: #222;\n      text-align: center;\n      padding: 2rem;\n      gap: 2rem;\n    }\n    #error h1,\n    #error h2 {\n      margin: 0;\n    }\n    #error h1 {\n      color: #ccc;\n      font-size: 3rem;\n      font-weight: 600;\n    }\n    #error h2 {\n      color: #888;\n      font-weight: 400;\n    }\n  </style>\n  </head>\n\n  <script>\n    window[\"##BUDIBASE_APP_ID##\"] = \"app_3ea495f0892c4311badfd934783afd94\"\n    window[\"##BUDIBASE_APP_EMBEDDED##\"] = \"false\"\n  </script>\n\n  \n\n<body id=\"app\"><div id=\"error\"><h1>There was an error loading your app</h1>\n      <h2>The Budibase client library could not be loaded. Try republishing your\n        app.\n      </h2></div>\n  <script type=\"application/javascript\">window.INIT_TIME = Date.now()\n  </script>\n  \n  <script type=\"application/javascript\" src=\"/api/assets/client?appId=app_3ea495f0892c4311badfd934783afd94&version=2.14.8\"></script>\n  \n  \n  \n  <script type=\"application/javascript\">if (window.loadBudibase) {\n      window.loadBudibase()\n    } else {\n      console.error(\"Failed to load the Budibase client\")\n      document.getElementById(\"error\").style.display = \"flex\"\n    }\n  </script></body>\n</html>"]}
+Response headers
+{
+  "Access-Control-Allow-Headers": "Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,x-requested-with",
+  "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
+  "Access-Control-Allow-Origin": "*",
+  "Content-Type": "application/json",
+  "X-Amzn-Trace-Id": "Root=1-67fd27c9-37dfea5e5a1c2d9ba02cab74;Parent=778bb5a84150d99c;Sampled=0;Lineage=1:d3ab409f:0"
+}
+Logs
+Execution log for request b1ad087c-0f6d-46bf-8d9a-0809bfc21be6
+Mon Apr 14 15:20:41 UTC 2025 : Starting execution for request: b1ad087c-0f6d-46bf-8d9a-0809bfc21be6
+Mon Apr 14 15:20:41 UTC 2025 : HTTP Method: GET, Resource Path: /api/schools
+Mon Apr 14 15:20:41 UTC 2025 : Method request path: {}
+Mon Apr 14 15:20:41 UTC 2025 : Method request query string: {}
+Mon Apr 14 15:20:41 UTC 2025 : Method request headers: {}
+Mon Apr 14 15:20:41 UTC 2025 : Method request body before transformations: 
+Mon Apr 14 15:20:41 UTC 2025 : Endpoint request URI: https://lambda.us-east-1.amazonaws.com/2015-03-31/functions/arn:aws:lambda:us-east-1:984369402869:function:api-main/invocations
+Mon Apr 14 15:20:41 UTC 2025 : Endpoint request headers: {X-Amz-Date=20250414T152041Z, x-amzn-apigateway-api-id=72w9r9ffd8, Accept=application/json, User-Agent=AmazonAPIGateway_72w9r9ffd8, Host=lambda.us-east-1.amazonaws.com, X-Amz-Content-Sha256=623afa78e6bf914229f134e33e83f2dce35abff9abfdcfe31ad8a887562b2871, X-Amzn-Trace-Id=Root=1-67fd27c9-37dfea5e5a1c2d9ba02cab74, x-amzn-lambda-integration-tag=b1ad087c-0f6d-46bf-8d9a-0809bfc21be6, Authorization=*********************************************************************************************************************************************************************************************************************************************************************************************************************************************c10c41, X-Amz-Source-Arn=arn:aws:execute-api:us-east-1:984369402869:72w9r9ffd8/test-invoke-stage/GET/api/schools, X-Amz-Security-Token=IQoJb3JpZ2luX2VjEI///////////wEaCXVzLWVhc3QtMSJGMEQCIFFrElZ+rVVNYgDgfV+n3WqvmdNy2hTXo/5bjEpYwCoeAiB02J/fWLpDY6JLWVyuolL5MV7w4B0c2wh12J [TRUNCATED]
+Mon Apr 14 15:20:41 UTC 2025 : Endpoint request body after transformations: {"resource":"/api/schools","path":"/api/schools","httpMethod":"GET","headers":null,"multiValueHeaders":null,"queryStringParameters":null,"multiValueQueryStringParameters":null,"pathParameters":null,"stageVariables":null,"requestContext":{"resourceId":"zf9us1","resourcePath":"/api/schools","httpMethod":"GET","extendedRequestId":"JBMnmGFpoAMFtmw=","requestTime":"14/Apr/2025:15:20:41 +0000","path":"/api/schools","accountId":"984369402869","protocol":"HTTP/1.1","stage":"test-invoke-stage","domainPrefix":"testPrefix","requestTimeEpoch":1744644041865,"requestId":"b1ad087c-0f6d-46bf-8d9a-0809bfc21be6","identity":{"cognitoIdentityPoolId":null,"cognitoIdentityId":null,"apiKey":"test-invoke-api-key","principalOrgId":null,"cognitoAuthenticationType":null,"userArn":"arn:aws:iam::984369402869:root","apiKeyId":"test-invoke-api-key-id","userAgent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36 Edg/136.0.0.0","accou [TRUNCATED]
+Mon Apr 14 15:20:41 UTC 2025 : Sending request to https://lambda.us-east-1.amazonaws.com/2015-03-31/functions/arn:aws:lambda:us-east-1:984369402869:function:api-main/invocations
+Mon Apr 14 15:20:41 UTC 2025 : Received response. Status: 200, Integration latency: 87 ms
+Mon Apr 14 15:20:41 UTC 2025 : Endpoint response headers: {Date=Mon, 14 Apr 2025 15:20:41 GMT, Content-Type=application/json, Content-Length=4076, Connection=keep-alive, x-amzn-RequestId=394e1a4f-6bd0-498f-948f-aa9ad69e51e9, x-amzn-Remapped-Content-Length=0, X-Amz-Executed-Version=$LATEST, X-Amzn-Trace-Id=Root=1-67fd27c9-37dfea5e5a1c2d9ba02cab74;Parent=778bb5a84150d99c;Sampled=0;Lineage=1:d3ab409f:0}
+Mon Apr 14 15:20:41 UTC 2025 : Endpoint response body before transformations: {"statusCode":200,"headers":{"Access-Control-Allow-Origin":"*","Access-Control-Allow-Headers":"Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,x-requested-with","Access-Control-Allow-Methods":"GET,POST,OPTIONS","Content-Type":"application/json"},"body":"{\"data\":[\"<html>\\n\\n  <head>\\n    <title>Trophy</title><meta charset=\\\"utf8\\\"><meta name=\\\"viewport\\\" content=\\\"width=device-width, initial-scale=1.0, viewport-fit=cover\\\"><meta name=\\\"title\\\" content=\\\"Trophy - built with Budibase\\\"><meta name=\\\"description\\\" content=\\\"\\\"><meta property=\\\"og:site_name\\\" content=\\\"Budibase\\\"><meta property=\\\"og:title\\\" content=\\\"Trophy - built with Budibase\\\"><meta property=\\\"og:description\\\" content=\\\"\\\"><meta property=\\\"og:type\\\" content=\\\"website\\\"><meta property=\\\"og:image\\\" content=\\\"https://res.cloudinary.com/daog6scxm/image/upload/v1698759482/meta-images/plain-branded-meta-image-cor [TRUNCATED]
+Mon Apr 14 15:20:41 UTC 2025 : Method response body after transformations: {"data":["<html>\n\n  <head>\n    <title>Trophy</title><meta charset=\"utf8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, viewport-fit=cover\"><meta name=\"title\" content=\"Trophy - built with Budibase\"><meta name=\"description\" content=\"\"><meta property=\"og:site_name\" content=\"Budibase\"><meta property=\"og:title\" content=\"Trophy - built with Budibase\"><meta property=\"og:description\" content=\"\"><meta property=\"og:type\" content=\"website\"><meta property=\"og:image\" content=\"https://res.cloudinary.com/daog6scxm/image/upload/v1698759482/meta-images/plain-branded-meta-image-coral_ocxmgu.png\"><meta property=\"twitter:card\" content=\"summary_large_image\"><meta property=\"twitter:site\" content=\"@budibase\"><meta property=\"twitter:image\" content=\"https://res.cloudinary.com/daog6scxm/image/upload/v1698759482/meta-images/plain-branded-meta-image-coral_ocxmgu.png\"><meta property=\"twitter:image:alt\" content=\"Trophy - [TRUNCATED]
+Mon Apr 14 15:20:41 UTC 2025 : Method response headers: {Access-Control-Allow-Origin=*, Access-Control-Allow-Headers=Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,x-requested-with, Access-Control-Allow-Methods=GET,POST,OPTIONS, Content-Type=application/json, X-Amzn-Trace-Id=Root=1-67fd27c9-37dfea5e5a1c2d9ba02cab74;Parent=778bb5a84150d99c;Sampled=0;Lineage=1:d3ab409f:0}
+Mon Apr 14 15:20:41 UTC 2025 : Successfully completed execution
+Mon Apr 14 15:20:41 UTC 2025 : Method completed with status: 200
+
+---
+
+_**Assistant**_
+
+<think>
+Looking at the new logs and errors, I can identify a few key issues:
+
+1. CORS issue fixed: The Lambda function is now returning proper CORS headers as seen in the API Gateway test results.
+
+2. Budibase Authentication Issue: The responses from the Budibase API contain HTML instead of JSON data. This usually happens when authentication fails, or when accessing the wrong URL. The response is actually the Budibase login page HTML.
+
+3. App.js errors:
+   - "No valid data in axios response" shows the client is trying to process HTML data as JSON.
+
+Key insights:
+- The healthcheck endpoint works fine (returns 200 with "status":"ok")
+- All data endpoints (schools, teams, individuals) are returning HTML instead of JSON
+- It seems the Budibase API is not accepting our authentication or the URLs are incorrect
+</think>
+
+I can see from the updated logs that our Lambda function changes have been successfully deployed. The CORS headers are now being set correctly, but we're encountering a new problem:
+
+## The Main Issue: Budibase API Authentication
+
+The error logs show that Budibase is returning HTML content instead of JSON data, which indicates an authentication issue. When Budibase can't authenticate your request, it returns its login page HTML instead of the API data.
+
+Here's what's happening:
+
+1. Your Lambda function is successfully receiving requests and processing them correctly
+2. When the Lambda tries to call the Budibase API, the authentication is failing
+3. Budibase returns HTML (its login page) instead of JSON data
+4. Your frontend app tries to parse this HTML as JSON and fails with "No valid data in axios response"
+
+## Recommended Fixes:
+
+1. **Check Budibase API Keys**: The API key or App ID may have expired or been changed. You should verify them in your Budibase admin panel.
+
+2. **Test Direct Budibase Access**: Try accessing one of the endpoints directly in a tool like Postman with your credentials to see if they work.
+
+3. **Use Budibase Query Endpoints**: 
+   Instead of using `/api/public/v1/tables/{table_id}/rows`, try the query endpoints that your original code was using:
+   ```
+   /api/public/v1/queries/query_datasource_plus_56025c99333e46b8a073e70585159c4c_4a3b9f6c024c4381afcf9f4e83f85f7d
+   ```
+
+4. **Update Your Lambda Function**: Let's modify the function to use POST instead of GET for the Budibase API requests, and use the query endpoints:
+
+```javascript
+// Update the handleBudibaseRequest function to:
+async function handleBudibaseRequest(url, headers) {
+  try {
+    console.log(`Making request to Budibase API: ${url}`);
+    
+    // Switch from GET to POST with empty data
+    const response = await axios.post(url, {}, {
+      headers: {
+        'x-budibase-api-key': budibaseApiKey,
+        'x-budibase-app-id': budibaseAppId,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      }
+    });
+    
+    // Rest of the function...
+  }
+}
+
+// And update your endpoint URLs:
+// For schools:
+`${budibaseApiUrl}/api/public/v1/queries/query_datasource_plus_56025c99333e46b8a073e70585159c4c_4a3b9f6c024c4381afcf9f4e83f85f7d`
+
+// For teams:
+`${budibaseApiUrl}/api/public/v1/queries/query_datasource_plus_56025c99333e46b8a073e70585159c4c_a47c1c9912c34d15b67e49ec62908fa0`
+
+// For individuals:
+`${budibaseApiUrl}/api/public/v1/queries/query_datasource_plus_56025c99333e46b8a073e70585159c4c_f62962e3b6ff47e690977d49cd6d6165`
+```
+
+If you'd like me to make these changes in your code, just let me know and I can provide the updated file. The key issue is that we need to access Budibase correctly. The rest of your Lambda function (error handling, path resolution, etc.) is working well now.
+
+---
+
+_**User**_
+
+yes make the changes
+
+---
+
+_**Assistant**_
+
+<think>
+I'll update the Lambda function to use POST instead of GET for Budibase API requests and use the specific query endpoints that were in the original code. This should help resolve the authentication issues with Budibase.
+</think>
+
+I'll update the Lambda function to use the correct Budibase query endpoints with POST requests:
+
+---
+
 
 
 ---

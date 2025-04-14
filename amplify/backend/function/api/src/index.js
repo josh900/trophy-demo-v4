@@ -62,7 +62,7 @@ exports.handler = async (event) => {
     // API endpoint for schools
     if (path.includes('/api/schools') || path.includes('/schools')) {
       return await handleBudibaseRequest(
-        `${budibaseApiUrl}/api/public/v1/tables/ta_44d3fc5be5e84c9b8e87d4ea7d79bad2/rows`,
+        `${budibaseApiUrl}/api/public/v1/queries/query_datasource_plus_56025c99333e46b8a073e70585159c4c_4a3b9f6c024c4381afcf9f4e83f85f7d`,
         headers
       );
     }
@@ -70,7 +70,7 @@ exports.handler = async (event) => {
     // API endpoint for teams
     if (path.includes('/api/teams') || path.includes('/teams')) {
       return await handleBudibaseRequest(
-        `${budibaseApiUrl}/api/public/v1/tables/ta_5c0c9dfe0a8640408db9c5e0e0b2c3c4/rows`,
+        `${budibaseApiUrl}/api/public/v1/queries/query_datasource_plus_56025c99333e46b8a073e70585159c4c_a47c1c9912c34d15b67e49ec62908fa0`,
         headers
       );
     }
@@ -78,7 +78,7 @@ exports.handler = async (event) => {
     // API endpoint for individuals
     if (path.includes('/api/individuals') || path.includes('/individuals')) {
       return await handleBudibaseRequest(
-        `${budibaseApiUrl}/api/public/v1/tables/ta_b09aa2ee7d844a85a93c9b3df795af2e/rows`,
+        `${budibaseApiUrl}/api/public/v1/queries/query_datasource_plus_56025c99333e46b8a073e70585159c4c_f62962e3b6ff47e690977d49cd6d6165`,
         headers
       );
     }
@@ -92,13 +92,13 @@ exports.handler = async (event) => {
       let budibaseEndpoint = '';
       switch (type) {
         case 'teams':
-          budibaseEndpoint = `${budibaseApiUrl}/api/public/v1/tables/ta_5c0c9dfe0a8640408db9c5e0e0b2c3c4/rows`;
+          budibaseEndpoint = `${budibaseApiUrl}/api/public/v1/queries/query_datasource_plus_56025c99333e46b8a073e70585159c4c_a47c1c9912c34d15b67e49ec62908fa0`;
           break;
         case 'individuals':
-          budibaseEndpoint = `${budibaseApiUrl}/api/public/v1/tables/ta_b09aa2ee7d844a85a93c9b3df795af2e/rows`;
+          budibaseEndpoint = `${budibaseApiUrl}/api/public/v1/queries/query_datasource_plus_56025c99333e46b8a073e70585159c4c_f62962e3b6ff47e690977d49cd6d6165`;
           break;
         default: // schools
-          budibaseEndpoint = `${budibaseApiUrl}/api/public/v1/tables/ta_44d3fc5be5e84c9b8e87d4ea7d79bad2/rows`;
+          budibaseEndpoint = `${budibaseApiUrl}/api/public/v1/queries/query_datasource_plus_56025c99333e46b8a073e70585159c4c_4a3b9f6c024c4381afcf9f4e83f85f7d`;
       }
       
       return await handleBudibaseRequest(budibaseEndpoint, headers);
@@ -138,8 +138,8 @@ async function handleBudibaseRequest(url, headers) {
   try {
     console.log(`Making request to Budibase API: ${url}`);
     
-    // Set up the request with proper headers
-    const response = await axios.get(url, {
+    // Use POST instead of GET with empty data object
+    const response = await axios.post(url, {}, {
       headers: {
         'x-budibase-api-key': budibaseApiKey,
         'x-budibase-app-id': budibaseAppId,
@@ -154,6 +154,8 @@ async function handleBudibaseRequest(url, headers) {
     let responseData = { data: [] };
     
     if (response.data) {
+      console.log('Raw Budibase response:', JSON.stringify(response.data).substring(0, 200) + '...');
+      
       if (Array.isArray(response.data)) {
         responseData.data = response.data;
       } else if (response.data.data) {
@@ -169,7 +171,12 @@ async function handleBudibaseRequest(url, headers) {
       body: JSON.stringify(responseData)
     };
   } catch (error) {
-    console.error('Error in Budibase request:', error);
+    console.error('Error in Budibase request:', error.message);
+    if (error.response) {
+      console.error('Error response status:', error.response.status);
+      console.error('Error response headers:', JSON.stringify(error.response.headers));
+      console.error('Error response data:', JSON.stringify(error.response.data).substring(0, 200) + '...');
+    }
     
     // Return appropriate error response
     const statusCode = error.response?.status || 500;
