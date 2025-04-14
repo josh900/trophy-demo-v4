@@ -1,0 +1,32 @@
+{
+  "paths": [
+    {
+      "name": "/api/schools",
+      "lambdaFunction": "api",
+      "permissions": {
+        "setting": "open"
+      }
+    },
+    {
+      "name": "/api/teams",
+      "lambdaFunction": "api",
+      "permissions": {
+        "setting": "open"
+      }
+    },
+    {
+      "name": "/api/individuals",
+      "lambdaFunction": "api",
+      "permissions": {
+        "setting": "open"
+      }
+    },
+    {
+      "name": "/api/axios",
+      "lambdaFunction": "api",
+      "permissions": {
+        "setting": "open"
+      }
+    }
+  ]
+} 

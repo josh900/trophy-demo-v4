@@ -1,0 +1,16 @@
+{
+  "function": {
+    "type": "Lambda",
+    "name": "api",
+    "dependsOn": [],
+    "permissions": {
+      "api": {},
+      "storage": {},
+      "function": {}
+    },
+    "runtime": "nodejs16.x",
+    "handler": "index.handler",
+    "memory": 256,
+    "timeout": 30
+  }
+} 

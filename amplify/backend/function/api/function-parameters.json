@@ -1,0 +1,17 @@
+{
+  "lambdaFunction": {
+    "permissions": {
+      "storage": {
+        "": []
+      }
+    },
+    "environmentVariables": {},
+    "layerVersionMap": {},
+    "build": true,
+    "providerContext": {
+      "functionName": "api",
+      "deploymentBucketName": "amplify-deploy-bucket",
+      "s3Key": "amplify-builds/api-latest-build.zip"
+    }
+  }
+} 
