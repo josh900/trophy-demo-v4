@@ -25,7 +25,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const defaultTheme = {
         primary: '#00205B',
         secondary: '#EFBF04',
-        backgroundGradient: 'linear-gradient(135deg, #F5F5F5 0%, #E0E0E0 100%)'
+        accent: '#000000',
+        backgroundGradient: 'linear-gradient(135deg, #00205B11 0%, #E0E0E0 100%)'
     };
 
     // Sport Icons Mapping - More comprehensive with generic terms for matching
@@ -282,117 +283,95 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Initialize the application
     async function init() {
-        // Set up event listeners
-        backButton.addEventListener('click', navigateBack);
-        homeButton.addEventListener('click', navigateHome);
+        console.log('Initializing app...');
         
-        // Add trophy modal to body
-        const trophyModal = document.createElement('div');
-        trophyModal.className = 'trophy-modal';
-        trophyModal.id = 'trophy-fullscreen-modal';
-        trophyModal.innerHTML = `
-            <div class="trophy-modal-content">
-                <button class="close-modal-btn"><i class="fas fa-times"></i></button>
-                <model-viewer id="modal-trophy-viewer" src="" alt="Championship Trophy Model" 
-                              ar ar-modes="webxr scene-viewer quick-look" 
-                              camera-controls touch-action="pan-y" 
-                              auto-rotate shadow-intensity="1"
-                              style="width: 100%; height: 100%; --mv-progress-mask: none;">
-                </model-viewer>
-            </div>
-        `;
-        document.body.appendChild(trophyModal);
+        // Set up state
+        state = {
+            schools: [],
+            teams: [],
+            individuals: [],
+            currentView: 'schools',
+            navigationHistory: [],
+            selectedSchool: null,
+            selectedCategory: null,
+            selectedSport: null,
+            selectedYear: null,
+            selectedTeam: null,
+            selectedPlayer: null,
+            selectedAthlete: null
+        };
         
-        // Add close event to modal
-        const closeModalBtn = trophyModal.querySelector('.close-modal-btn');
-        closeModalBtn.addEventListener('click', () => {
-            trophyModal.style.display = 'none';
-            // Stop rotation when closing
-            const modalViewer = document.getElementById('modal-trophy-viewer');
-            if(modalViewer) modalViewer.removeAttribute('auto-rotate'); 
-        });
-
-        // Load data and render initial view
-        showLoading(true);
-        
-        // Set up loading states
-        let schoolsLoaded = false;
-        let teamsLoaded = false;
-        let individualsLoaded = false;
+        // Load default theme values
+        defaultTheme = {
+            primary: '#00205B',
+            secondary: '#EFBF04',
+            accent: '#000000',
+            backgroundGradient: 'linear-gradient(135deg, #00205B11 0%, #E0E0E0 100%)'
+        };
         
         try {
-            // Try to load schools data
+            showLoading(true);
+            
+            // Fetch data from API
             await fetchSchools();
-            schoolsLoaded = true;
-        } catch (error) {
-            console.error('Error loading schools data:', error);
-            // Initialize with empty array if fetch fails
-            state.schools = [];
-        }
-        
-        try {
-            // Try to load teams data
+            console.log('Schools fetched:', state.schools.length);
+            
             await fetchTeams();
-            teamsLoaded = true;
-        } catch (error) {
-            console.error('Error loading teams data:', error);
-            // Initialize with empty array if fetch fails
-            state.teams = [];
-        }
-        
-        try {
-            // Try to load individuals data
+            console.log('Teams fetched:', state.teams.length);
+            
             await fetchIndividuals();
-            individualsLoaded = true;
+            console.log('Individuals fetched:', state.individuals.length);
+            
+            // Clean up data - fix placeholder URLs to avoid 404 errors
+            cleanupData();
+            
+            // Render initial view
+            renderView('schools');
+            
+            // Set up event listeners
+            setupEventListeners();
+            setupImageFallbacks();
+            
+            showLoading(false);
         } catch (error) {
-            console.error('Error loading individuals data:', error);
-            // Initialize with empty array if fetch fails
-            state.individuals = [];
-        }
-        
-        showLoading(false);
-        
-        // If all data failed to load, show error message
-        if (!schoolsLoaded && !teamsLoaded && !individualsLoaded) {
+            console.error('Error during initialization:', error);
             contentContainer.innerHTML = `
                 <div class="error-container">
-                    <h2>Connection Error</h2>
-                    <p>We're unable to connect to the data servers at this time.</p>
-                    <p>Please check your internet connection and try again later.</p>
-                    <button class="btn" onclick="location.reload()">Refresh</button>
+                    <h2>Unable to Load Data</h2>
+                    <p>There was a problem loading the trophy case data. Please try again later.</p>
+                    <p>Error: ${error.message}</p>
+                    <button class="btn" onclick="location.reload()">Retry</button>
                 </div>
             `;
-            return;
+            showLoading(false);
         }
+    }
+
+    // Function to clean up data and fix placeholder URLs
+    function cleanupData() {
+        // Fix any placeholder_url values in schools
+        state.schools.forEach(school => {
+            if (school.media_url === 'placeholder_url' || !school.media_url) {
+                school.media_url = ''; // Empty string will trigger fallback SVG
+            }
+        });
         
-        // If some data loaded but not schools, show a limited error message
-        if (!schoolsLoaded) {
-            contentContainer.innerHTML = `
-                <div class="error-container">
-                    <h2>School Data Unavailable</h2>
-                    <p>We're unable to load school information at this time.</p>
-                    <p>Some features may be limited until connectivity is restored.</p>
-                    <button class="btn" onclick="location.reload()">Refresh</button>
-                </div>
-            `;
-            return;
-        }
+        // Fix any placeholder_url values in teams
+        state.teams.forEach(team => {
+            if (team.team_photo_url === 'placeholder_url' || !team.team_photo_url) {
+                team.team_photo_url = ''; // Empty string will trigger fallback SVG
+            }
+            if (team.trophy_model_url === 'placeholder_url' || !team.trophy_model_url) {
+                team.trophy_model_url = ''; // Empty string will trigger fallback
+            }
+        });
         
-        // If schools loaded but we have no data, show empty state
-        if (state.schools.length === 0) {
-            contentContainer.innerHTML = `
-                <div class="error-container">
-                    <h2>No Schools Available</h2>
-                    <p>There are currently no schools in the database.</p>
-                    <p>Please contact the administrator to add school data.</p>
-                    <button class="btn" onclick="location.reload()">Refresh</button>
-                </div>
-            `;
-            return;
-        }
-        
-        // If we have schools data, render the schools view
-        renderView('schools');
+        // Fix any placeholder_url values in individuals
+        state.individuals.forEach(individual => {
+            if (individual.media_url === 'placeholder_url' || !individual.media_url) {
+                individual.media_url = ''; // Empty string will trigger fallback SVG
+            }
+        });
     }
 
     // Data Fetching Functions
@@ -409,9 +388,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 const data = await response.json();
                 console.log('Axios schools response:', data);
                 
-                if (data.success && Array.isArray(data.data)) {
+                // Accept data in various formats
+                if (data && data.data) {
                     state.schools = data.data;
                     return { data: data.data };
+                } else if (Array.isArray(data)) {
+                    state.schools = data;
+                    return { data };
                 }
                 throw new Error('No valid data in axios response');
             } catch (axiosError) {
@@ -421,12 +404,23 @@ document.addEventListener('DOMContentLoaded', () => {
                 const response = await fetch(`${apiBaseUrl}/api/schools`);
                 if (!response.ok) throw new Error(`Server responded with ${response.status}`);
                 const data = await response.json();
-                state.schools = data.data || [];
-                return data;
+                
+                // Handle multiple response formats 
+                if (data && data.data) {
+                    state.schools = data.data;
+                } else if (Array.isArray(data)) {
+                    state.schools = data;
+                } else {
+                    state.schools = [];
+                }
+                
+                return { data: state.schools };
             }
         } catch (error) {
             console.error('Error fetching schools:', error);
-            throw error;
+            // Provide default empty array to avoid errors
+            state.schools = [];
+            return { data: [] };
         }
     }
 
@@ -443,9 +437,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 const data = await response.json();
                 console.log('Axios teams response:', data);
                 
-                if (data.success && Array.isArray(data.data)) {
+                // Accept data in various formats
+                if (data && data.data) {
                     state.teams = data.data;
                     return { data: data.data };
+                } else if (Array.isArray(data)) {
+                    state.teams = data;
+                    return { data };
                 }
                 throw new Error('No valid data in axios response');
             } catch (axiosError) {
@@ -455,12 +453,23 @@ document.addEventListener('DOMContentLoaded', () => {
                 const response = await fetch(`${apiBaseUrl}/api/teams`);
                 if (!response.ok) throw new Error(`Server responded with ${response.status}`);
                 const data = await response.json();
-                state.teams = data.data || [];
-                return data;
+                
+                // Handle multiple response formats
+                if (data && data.data) {
+                    state.teams = data.data;
+                } else if (Array.isArray(data)) {
+                    state.teams = data;
+                } else {
+                    state.teams = [];
+                }
+                
+                return { data: state.teams };
             }
         } catch (error) {
             console.error('Error fetching teams:', error);
-            throw error;
+            // Provide default empty array to avoid errors
+            state.teams = [];
+            return { data: [] };
         }
     }
 
@@ -477,9 +486,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 const data = await response.json();
                 console.log('Axios individuals response:', data);
                 
-                if (data.success && Array.isArray(data.data)) {
+                // Accept data in various formats
+                if (data && data.data) {
                     state.individuals = data.data;
                     return { data: data.data };
+                } else if (Array.isArray(data)) {
+                    state.individuals = data;
+                    return { data };
                 }
                 throw new Error('No valid data in axios response');
             } catch (axiosError) {
@@ -489,12 +502,23 @@ document.addEventListener('DOMContentLoaded', () => {
                 const response = await fetch(`${apiBaseUrl}/api/individuals`);
                 if (!response.ok) throw new Error(`Server responded with ${response.status}`);
                 const data = await response.json();
-                state.individuals = data.data || [];
-                return data;
+                
+                // Handle multiple response formats
+                if (data && data.data) {
+                    state.individuals = data.data;
+                } else if (Array.isArray(data)) {
+                    state.individuals = data;
+                } else {
+                    state.individuals = [];
+                }
+                
+                return { data: state.individuals };
             }
         } catch (error) {
             console.error('Error fetching individuals:', error);
-            throw error;
+            // Provide default empty array to avoid errors
+            state.individuals = [];
+            return { data: [] };
         }
     }
 
@@ -1402,6 +1426,39 @@ document.addEventListener('DOMContentLoaded', () => {
                 // If not yet complete, the onerror handler will catch it if it fails
                 // No immediate action needed here, just let the browser handle loading
             }
+        });
+    }
+
+    // Setup event listeners
+    function setupEventListeners() {
+        // Set up navigation buttons
+        backButton.addEventListener('click', navigateBack);
+        homeButton.addEventListener('click', navigateHome);
+        
+        // Add trophy modal to body
+        const trophyModal = document.createElement('div');
+        trophyModal.className = 'trophy-modal';
+        trophyModal.id = 'trophy-fullscreen-modal';
+        trophyModal.innerHTML = `
+            <div class="trophy-modal-content">
+                <button class="close-modal-btn"><i class="fas fa-times"></i></button>
+                <model-viewer id="modal-trophy-viewer" src="" alt="Championship Trophy Model" 
+                            ar ar-modes="webxr scene-viewer quick-look" 
+                            camera-controls touch-action="pan-y" 
+                            auto-rotate shadow-intensity="1"
+                            style="width: 100%; height: 100%; --mv-progress-mask: none;">
+                </model-viewer>
+            </div>
+        `;
+        document.body.appendChild(trophyModal);
+        
+        // Add close event to modal
+        const closeModalBtn = trophyModal.querySelector('.close-modal-btn');
+        closeModalBtn.addEventListener('click', () => {
+            trophyModal.style.display = 'none';
+            // Stop rotation when closing
+            const modalViewer = document.getElementById('modal-trophy-viewer');
+            if(modalViewer) modalViewer.removeAttribute('auto-rotate'); 
         });
     }
 

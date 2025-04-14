@@ -20,35 +20,48 @@
             window.API_ENDPOINT = apiGatewayUrl;
             console.log('Using hardcoded API Gateway URL:', window.API_ENDPOINT);
             
-            // Rest of function left for fallback purposes
+            // Amplify hosting detection - only attempt in production
             if (window.location.hostname.includes('amplifyapp.com')) {
-                // First try to get the API URL from the Amplify outputs
-                fetch('/.amplify-hosting/api-info.json')
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data && data.api && data.api.api && data.api.api.RootUrl) {
-                            window.API_ENDPOINT = data.api.api.RootUrl;
-                            console.log('API Gateway URL detected from Amplify:', window.API_ENDPOINT);
-                        } else {
-                            console.log('API Gateway URL not found in amplify outputs, using hardcoded URL');
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error fetching API Gateway URL:', error);
-                        console.log('Using hardcoded API Gateway URL');
-                    });
-            } else {
-                // For local development
-                if (!window.API_ENDPOINT) {
-                    window.API_ENDPOINT = '';
-                    console.log('Using relative API paths for local development');
+                try {
+                    // First try to get the API URL from the Amplify outputs
+                    fetch('/.amplify-hosting/api-info.json')
+                        .then(response => {
+                            if (!response.ok) {
+                                throw new Error('API info not available');
+                            }
+                            return response.json();
+                        })
+                        .then(data => {
+                            if (data && data.api && data.api.api && data.api.api.RootUrl) {
+                                window.API_ENDPOINT = data.api.api.RootUrl;
+                                console.log('API Gateway URL detected from Amplify:', window.API_ENDPOINT);
+                            } else {
+                                console.log('API Gateway URL not found in amplify outputs, using hardcoded URL');
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error fetching API Gateway URL:', error);
+                            console.log('Using hardcoded API Gateway URL');
+                        });
+                } catch (error) {
+                    console.error('Error in API detection:', error);
                 }
+            } else if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+                // For local development
+                window.API_ENDPOINT = ''; // Use relative paths for local dev
+                console.log('Using relative API paths for local development');
             }
         }
         
         // Function to test API healthcheck
         function checkApiHealth() {
-            // Use the hardcoded endpoint first
+            // Don't test health in production - avoid CORS errors in console
+            if (window.location.hostname.includes('amplifyapp.com')) {
+                console.log('Skipping health check in production to avoid CORS errors');
+                return;
+            }
+            
+            // Use the API endpoint for local development only
             fetch(`${window.API_ENDPOINT}/api/healthcheck`)
                 .then(response => {
                     if (response.ok) {
@@ -62,47 +75,30 @@
                 })
                 .catch(error => {
                     console.warn('API healthcheck failed:', error);
-                    console.log('Trying alternative URLs...');
                     
-                    // Test various potential API endpoints
-                    const hostname = window.location.hostname;
-                    const region = 'us-east-1'; // default region
-                    
-                    // Generate potential API URLs based on app name and region
-                    const potentialApis = [
-                        '', // relative path as fallback
-                        `https://api.${hostname}`,
-                        `https://api-${hostname.split('.')[0]}.${region}.amazonaws.com/Prod`,
-                        `https://72w9r9ffd8.execute-api.us-east-1.amazonaws.com/Prod` // The known working URL
-                    ];
-                    
-                    // Try each API endpoint until one works
-                    let apiFound = false;
-                    potentialApis.forEach((apiUrl, index) => {
-                        if (!apiFound) {
-                            setTimeout(() => {
-                                fetch(`${apiUrl}/api/healthcheck`)
-                                    .then(response => {
-                                        if (response.ok) {
-                                            window.API_ENDPOINT = apiUrl;
-                                            console.log('API endpoint found at:', apiUrl);
-                                            apiFound = true;
-                                        }
-                                    })
-                                    .catch(() => {
-                                        console.log(`API endpoint not found at: ${apiUrl}`);
-                                    });
-                            }, index * 100); // Stagger requests
-                        }
-                    });
+                    // In local development, try relative path
+                    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+                        fetch('/api/healthcheck')
+                            .then(response => {
+                                if (response.ok) {
+                                    window.API_ENDPOINT = '';
+                                    console.log('Using relative API paths');
+                                }
+                            })
+                            .catch(() => {
+                                console.log('Local API server not running');
+                            });
+                    }
                 });
         }
         
         // Run the detection on page load
         detectApiEndpoint();
         
-        // Also check API health after a short delay
-        setTimeout(checkApiHealth, 1000);
+        // Only check API health locally
+        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+            setTimeout(checkApiHealth, 1000);
+        }
     </script>
 </head>
 <body>

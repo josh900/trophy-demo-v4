@@ -6321,9 +6321,178 @@ I'll update the Lambda function to use the correct Budibase query endpoints with
 
 ---
 
+```diff
+      if (path.includes('/api/schools') || path.includes('/schools')) {
+        return await handleBudibaseRequest(
+-         `${budibaseApiUrl}/api/public/v1/tables/ta_44d3fc5be5e84c9b8e87d4ea7d79bad2/rows`,
++         `${budibaseApiUrl}/api/public/v1/queries/query_datasource_plus_56025c99333e46b8a073e70585159c4c_4a3b9f6c024c4381afcf9f4e83f85f7d`,
+          headers
+        );
+      if (path.includes('/api/teams') || path.includes('/teams')) {
+        return await handleBudibaseRequest(
+-         `${budibaseApiUrl}/api/public/v1/tables/ta_5c0c9dfe0a8640408db9c5e0e0b2c3c4/rows`,
++         `${budibaseApiUrl}/api/public/v1/queries/query_datasource_plus_56025c99333e46b8a073e70585159c4c_a47c1c9912c34d15b67e49ec62908fa0`,
+          headers
+        );
+      if (path.includes('/api/individuals') || path.includes('/individuals')) {
+        return await handleBudibaseRequest(
+-         `${budibaseApiUrl}/api/public/v1/tables/ta_b09aa2ee7d844a85a93c9b3df795af2e/rows`,
++         `${budibaseApiUrl}/api/public/v1/queries/query_datasource_plus_56025c99333e46b8a073e70585159c4c_f62962e3b6ff47e690977d49cd6d6165`,
+          headers
+        );
+        switch (type) {
+          case 'teams':
+-           budibaseEndpoint = `${budibaseApiUrl}/api/public/v1/tables/ta_5c0c9dfe0a8640408db9c5e0e0b2c3c4/rows`;
++           budibaseEndpoint = `${budibaseApiUrl}/api/public/v1/queries/query_datasource_plus_56025c99333e46b8a073e70585159c4c_a47c1c9912c34d15b67e49ec62908fa0`;
+            break;
+          case 'individuals':
+-           budibaseEndpoint = `${budibaseApiUrl}/api/public/v1/tables/ta_b09aa2ee7d844a85a93c9b3df795af2e/rows`;
++           budibaseEndpoint = `${budibaseApiUrl}/api/public/v1/queries/query_datasource_plus_56025c99333e46b8a073e70585159c4c_f62962e3b6ff47e690977d49cd6d6165`;
+            break;
+          default: // schools
+-           budibaseEndpoint = `${budibaseApiUrl}/api/public/v1/tables/ta_44d3fc5be5e84c9b8e87d4ea7d79bad2/rows`;
++           budibaseEndpoint = `${budibaseApiUrl}/api/public/v1/queries/query_datasource_plus_56025c99333e46b8a073e70585159c4c_4a3b9f6c024c4381afcf9f4e83f85f7d`;
+        }
+        
+      console.log(`Making request to Budibase API: ${url}`);
+      
+-     // Set up the request with proper headers
+-     const response = await axios.get(url, {
++     // Use POST instead of GET with empty data object
++     const response = await axios.post(url, {}, {
+        headers: {
+          'x-budibase-api-key': budibaseApiKey,
+      
+      if (response.data) {
++       console.log('Raw Budibase response:', JSON.stringify(response.data).substring(0, 200) + '...');
++       
+        if (Array.isArray(response.data)) {
+          responseData.data = response.data;
+      };
+    } catch (error) {
+-     console.error('Error in Budibase request:', error);
++     console.error('Error in Budibase request:', error.message);
++     if (error.response) {
++       console.error('Error response status:', error.response.status);
++       console.error('Error response headers:', JSON.stringify(error.response.headers));
++       console.error('Error response data:', JSON.stringify(error.response.data).substring(0, 200) + '...');
++     }
+      
+      // Return appropriate error response
+```
+
+---
+
+I've made the following key changes to your Lambda function:
+
+1. **Switched to using query endpoints instead of table endpoints**:
+   - Changed all Budibase API URLs to use the query endpoints that were in your original API code
+   - These are more likely to work since they were previously working in your API
+
+2. **Changed API method from GET to POST**:
+   - Budibase queries typically expect POST requests with an empty object `{}`
+   - Your previous code was using POST, so I've aligned with that pattern
+
+3. **Added more detailed logging**:
+   - Now logs the first 200 characters of response data to help diagnose issues
+   - Logs more error details including response status, headers, and data when errors occur
+
+These changes should fix the authentication issues you're experiencing with the Budibase API. Now your Lambda function will:
+
+1. Receive requests from the client 
+2. Use the proper POST method with query endpoints to access Budibase data
+3. Return properly formatted responses with CORS headers
+
+The updated Lambda will be deployed automatically through your Amplify CI/CD pipeline. You should be able to see the results in your next build.
+
+If you continue to have issues after this update, I recommend checking:
+- The API keys and App ID in your Budibase account to ensure they match what's in your code
+- Check if Budibase has any IP restrictions that might block AWS Lambda
+
+---
+
+_**User**_
+
+Removing unpermitted intrinsics
+(index):21 Using hardcoded API Gateway URL: https://72w9r9ffd8.execute-api.us-east-1.amazonaws.com/Prod
+/.amplify-hosting/api-info.json:1 
+            
+            
+            Failed to load resource: the server responded with a status of 404 ()
+(index):37  Error fetching API Gateway URL: SyntaxError: Unexpected token '<', "<!DOCTYPE "... is not valid JSON
+(anonymous) @ (index):37
+(index):38 Using hardcoded API Gateway URL
+main.d3u21ki4rjrkyy.amplifyapp.com/:1  Access to fetch at 'https://72w9r9ffd8.execute-api.us-east-1.amazonaws.com/Prod/api/healthcheck' from origin 'https://main.d3u21ki4rjrkyy.amplifyapp.com' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.
+72w9r9ffd8.execute-api.us-east-1.amazonaws.com/Prod/api/healthcheck:1 
+            
+            
+            Failed to load resource: net::ERR_FAILED
+(index):64  API healthcheck failed: TypeError: Failed to fetch
+    at checkApiHealth ((index):52:13)
+(anonymous) @ (index):64
+(index):65 Trying alternative URLs...
+/api/healthcheck/:1 
+            
+            
+            Failed to load resource: the server responded with a status of 404 ()
+api-main.us-east-1.amazonaws.com/Prod/api/healthcheck:1 
+            
+            
+            Failed to load resource: net::ERR_NAME_NOT_RESOLVED
+(index):93 API endpoint not found at: https://api-main.us-east-1.amazonaws.com/Prod
+main.d3u21ki4rjrkyy.amplifyapp.com/:1  Access to fetch at 'https://api.main.d3u21ki4rjrkyy.amplifyapp.com/api/healthcheck' from origin 'https://main.d3u21ki4rjrkyy.amplifyapp.com' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.
+api.main.d3u21ki4rjrkyy.amplifyapp.com/api/healthcheck:1 
+            
+            
+            Failed to load resource: net::ERR_FAILED
+(index):93 API endpoint not found at: https://api.main.d3u21ki4rjrkyy.amplifyapp.com
+main.d3u21ki4rjrkyy.amplifyapp.com/:1  Access to fetch at 'https://72w9r9ffd8.execute-api.us-east-1.amazonaws.com/Prod/api/healthcheck' from origin 'https://main.d3u21ki4rjrkyy.amplifyapp.com' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.
+72w9r9ffd8.execute-api.us-east-1.amazonaws.com/Prod/api/healthcheck:1 
+            
+            
+            Failed to load resource: net::ERR_FAILED
+(index):93 API endpoint not found at: https://72w9r9ffd8.execute-api.us-east-1.amazonaws.com/Prod
+app.js:410 Axios schools response: Object
+app.js:418  Axios attempt failed: Error: No valid data in axios response
+    at fetchSchools (app.js:416:23)
+    at async init (app.js:325:13)
+fetchSchools @ app.js:418
+[NEW] Explain Console errors by using Copilot in Edge: click
+         
+         to explain an error. 
+        Learn more
+        Don't show again
+app.js:444 Axios teams response: {data: Array(4)}
+app.js:452  Axios attempt failed: Error: No valid data in axios response
+    at fetchTeams (app.js:450:23)
+    at async init (app.js:335:13)
+fetchTeams @ app.js:452
+await in fetchTeams
+init @ app.js:335
+app.js:478 Axios individuals response: {data: Array(11)}data: (11) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}][[Prototype]]: Object
+app.js:486  Axios attempt failed: Error: No valid data in axios response
+    at fetchIndividuals (app.js:484:23)
+    at async init (app.js:345:13)
+fetchIndividuals @ app.js:486
+await in fetchIndividuals
+init @ app.js:345
+placeholder_url/:1 
+            
+            
+            GET https://main.d3u21ki4rjrkyy.amplifyapp.com/placeholder_url/ 404 (Not Found)
+Image
+renderTeamDetailView @ app.js:1007
+renderView @ app.js:613
+navigateToView @ app.js:511
+(anonymous) @ app.js:920
+
+The app is fully working now, but still getting a lot of errors. can you check to see what all this is and maybe clean up and maybe remove unused or conflicing files?
+
 
 
 ---
+
+_**Assistant**_
 
 
 
