@@ -4,6 +4,7 @@ frontend:
     build:
       commands:
         - npm install
+        - npm run build
   artifacts:
     baseDirectory: /
     files:

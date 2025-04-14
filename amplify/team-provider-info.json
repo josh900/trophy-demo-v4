@@ -1,0 +1,16 @@
+{
+  "main": {
+    "awscloudformation": {
+      "AuthRoleName": "amplify-trophycasev4-main-123456-authRole",
+      "UnauthRoleName": "amplify-trophycasev4-main-123456-unauthRole",
+      "AuthRoleArn": "arn:aws:iam::123456789012:role/amplify-trophycasev4-main-123456-authRole",
+      "UnauthRoleArn": "arn:aws:iam::123456789012:role/amplify-trophycasev4-main-123456-unauthRole",
+      "Region": "us-east-1"
+    },
+    "categories": {
+      "function": {
+        "api": {}
+      }
+    }
+  }
+} 
