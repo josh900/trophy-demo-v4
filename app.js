@@ -398,9 +398,12 @@ document.addEventListener('DOMContentLoaded', () => {
     // Data Fetching Functions
     async function fetchSchools() {
         try {
+            // Get the API URL from environment or use default
+            const apiBaseUrl = window.API_ENDPOINT || '';
+            
             // Try both endpoints to see which works
             try {
-                const response = await fetch('/api/axios?type=schools');
+                const response = await fetch(`${apiBaseUrl}/api/axios?type=schools`);
                 if (!response.ok) throw new Error(`Axios endpoint responded with ${response.status}`);
                 
                 const data = await response.json();
@@ -415,7 +418,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.error('Axios attempt failed:', axiosError);
                 
                 // Fallback to original endpoint
-                const response = await fetch('/api/schools');
+                const response = await fetch(`${apiBaseUrl}/api/schools`);
                 if (!response.ok) throw new Error(`Server responded with ${response.status}`);
                 const data = await response.json();
                 state.schools = data.data || [];
@@ -429,9 +432,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function fetchTeams() {
         try {
+            // Get the API URL from environment or use default
+            const apiBaseUrl = window.API_ENDPOINT || '';
+            
             // Try both endpoints to see which works
             try {
-                const response = await fetch('/api/axios?type=teams');
+                const response = await fetch(`${apiBaseUrl}/api/axios?type=teams`);
                 if (!response.ok) throw new Error(`Axios endpoint responded with ${response.status}`);
                 
                 const data = await response.json();
@@ -446,7 +452,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.error('Axios attempt failed:', axiosError);
                 
                 // Fallback to original endpoint
-                const response = await fetch('/api/teams');
+                const response = await fetch(`${apiBaseUrl}/api/teams`);
                 if (!response.ok) throw new Error(`Server responded with ${response.status}`);
                 const data = await response.json();
                 state.teams = data.data || [];
@@ -460,9 +466,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function fetchIndividuals() {
         try {
+            // Get the API URL from environment or use default
+            const apiBaseUrl = window.API_ENDPOINT || '';
+            
             // Try both endpoints to see which works
             try {
-                const response = await fetch('/api/axios?type=individuals');
+                const response = await fetch(`${apiBaseUrl}/api/axios?type=individuals`);
                 if (!response.ok) throw new Error(`Axios endpoint responded with ${response.status}`);
                 
                 const data = await response.json();
@@ -477,7 +486,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.error('Axios attempt failed:', axiosError);
                 
                 // Fallback to original endpoint
-                const response = await fetch('/api/individuals');
+                const response = await fetch(`${apiBaseUrl}/api/individuals`);
                 if (!response.ok) throw new Error(`Server responded with ${response.status}`);
                 const data = await response.json();
                 state.individuals = data.data || [];

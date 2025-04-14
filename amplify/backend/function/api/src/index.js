@@ -21,6 +21,20 @@ exports.handler = async (event) => {
         body: JSON.stringify({ message: 'CORS preflight response' }),
       };
     }
+    
+    // Add a healthcheck endpoint
+    if (event.path.includes('/api/healthcheck')) {
+      return {
+        statusCode: 200,
+        headers,
+        body: JSON.stringify({ 
+          status: 'ok',
+          timestamp: new Date().toISOString(),
+          message: 'API is working correctly',
+          event: event
+        }),
+      };
+    }
 
     // Parse the path to determine which endpoint to call
     const path = event.path;

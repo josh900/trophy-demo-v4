@@ -1200,11 +1200,1048 @@ Let's create the missing CloudFormation template file:
 
 ---
 
-
+```diff
+-  
++ {
++   "AWSTemplateFormatVersion": "2010-09-09",
++   "Description": "Lambda Function resource stack creation using Amplify CLI",
++   "Parameters": {
++     "CloudWatchRule": {
++       "Type": "String",
++       "Default": "NONE",
++       "Description": "Enter CloudWatch Events Rule Pattern"
++     },
++     "deploymentBucketName": {
++       "Type": "String"
++     },
++     "env": {
++       "Type": "String"
++     },
++     "s3Key": {
++       "Type": "String"
++     }
++   },
++   "Conditions": {
++     "ShouldNotCreateEnvResources": {
++       "Fn::Equals": [
++         {
++           "Ref": "env"
++         },
++         "NONE"
++       ]
++     }
++   },
++   "Resources": {
++     "LambdaFunction": {
++       "Type": "AWS::Lambda::Function",
++       "Metadata": {
++         "aws:asset:path": "./src",
++         "aws:asset:property": "Code"
++       },
++       "Properties": {
++         "Code": {
++           "S3Bucket": {
++             "Ref": "deploymentBucketName"
++           },
++           "S3Key": {
++             "Ref": "s3Key"
++           }
++         },
++         "Handler": "index.handler",
++         "FunctionName": {
++           "Fn::If": [
++             "ShouldNotCreateEnvResources",
++             "api",
++             {
++               "Fn::Join": [
++                 "",
++                 [
++                   "api",
++                   "-",
++                   {
++                     "Ref": "env"
++                   }
++                 ]
++               ]
++             }
++           ]
++         },
++         "Environment": {
++           "Variables": {
++             "ENV": {
++               "Ref": "env"
++             }
++           }
++         },
++         "Role": {
++           "Fn::GetAtt": [
++             "LambdaExecutionRole",
++             "Arn"
++           ]
++         },
++         "Runtime": "nodejs16.x",
++         "Layers": [],
++         "Timeout": 30,
++         "MemorySize": 256
++       }
++     },
++     "LambdaExecutionRole": {
++       "Type": "AWS::IAM::Role",
++       "Properties": {
++         "RoleName": {
++           "Fn::If": [
++             "ShouldNotCreateEnvResources",
++             "apiLambdaRole",
++             {
++               "Fn::Join": [
++                 "",
++                 [
++                   "apiLambdaRole",
++                   "-",
++                   {
++                     "Ref": "env"
++                   }
++                 ]
++               ]
++             }
++           ]
++         },
++         "AssumeRolePolicyDocument": {
++           "Version": "2012-10-17",
++           "Statement": [
++             {
++               "Effect": "Allow",
++               "Principal": {
++                 "Service": [
++                   "lambda.amazonaws.com"
++                 ]
++               },
++               "Action": [
++                 "sts:AssumeRole"
++               ]
++             }
++           ]
++         },
++         "ManagedPolicyArns": [
++           "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
++         ]
++       }
++     },
++     "lambdaexecutionpolicy": {
++       "Type": "AWS::IAM::Policy",
++       "Properties": {
++         "PolicyName": "lambda-execution-policy",
++         "Roles": [
++           {
++             "Ref": "LambdaExecutionRole"
++           }
++         ],
++         "PolicyDocument": {
++           "Version": "2012-10-17",
++           "Statement": [
++             {
++               "Effect": "Allow",
++               "Action": [
++                 "logs:CreateLogGroup",
++                 "logs:CreateLogStream",
++                 "logs:PutLogEvents"
++               ],
++               "Resource": {
++                 "Fn::Sub": [
++                   "arn:aws:logs:${region}:${account}:log-group:/aws/lambda/${lambda}:log-stream:*",
++                   {
++                     "region": {
++                       "Ref": "AWS::Region"
++                     },
++                     "account": {
++                       "Ref": "AWS::AccountId"
++                     },
++                     "lambda": {
++                       "Ref": "LambdaFunction"
++                     }
++                   }
++                 ]
++               }
++             }
++           ]
++         }
++       }
++     }
++   },
++   "Outputs": {
++     "Name": {
++       "Value": {
++         "Ref": "LambdaFunction"
++       }
++     },
++     "Arn": {
++       "Value": {
++         "Fn::GetAtt": [
++           "LambdaFunction",
++           "Arn"
++         ]
++       }
++     },
++     "Region": {
++       "Value": {
++         "Ref": "AWS::Region"
++       }
++     },
++     "LambdaExecutionRole": {
++       "Value": {
++         "Ref": "LambdaExecutionRole"
++       }
++     },
++     "LambdaExecutionRoleArn": {
++       "Value": {
++         "Fn::GetAtt": [
++           "LambdaExecutionRole",
++           "Arn"
++         ]
++       }
++     }
++   }
++ } 
+```
 
 ---
 
+Now let's also create a team-provider-info.json file, which is required by Amplify:
 
+---
+
+```diff
+-  
++ {
++   "main": {
++     "awscloudformation": {
++       "AuthRoleName": "amplify-trophycasev4-main-123456-authRole",
++       "UnauthRoleName": "amplify-trophycasev4-main-123456-unauthRole",
++       "AuthRoleArn": "arn:aws:iam::123456789012:role/amplify-trophycasev4-main-123456-authRole",
++       "UnauthRoleArn": "arn:aws:iam::123456789012:role/amplify-trophycasev4-main-123456-unauthRole",
++       "Region": "us-east-1"
++     },
++     "categories": {
++       "function": {
++         "api": {}
++       }
++     }
++   }
++ } 
+```
+
+---
+
+Now, let's also create the API CloudFormation template:
+
+---
+
+```diff
+-  
++ {
++   "AWSTemplateFormatVersion": "2010-09-09",
++   "Description": "API Gateway resource stack creation using Amplify CLI",
++   "Parameters": {
++     "env": {
++       "Type": "String"
++     },
++     "functionapiName": {
++       "Type": "String",
++       "Default": "functionapiName"
++     },
++     "functionapiArn": {
++       "Type": "String",
++       "Default": "functionapiArn"
++     }
++   },
++   "Conditions": {
++     "ShouldNotCreateEnvResources": {
++       "Fn::Equals": [
++         {
++           "Ref": "env"
++         },
++         "NONE"
++       ]
++     }
++   },
++   "Resources": {
++     "ApiGatewayRestApi": {
++       "Type": "AWS::ApiGateway::RestApi",
++       "Properties": {
++         "Name": "api",
++         "EndpointConfiguration": {
++           "Types": [
++             "EDGE"
++           ]
++         },
++         "Body": {
++           "swagger": "2.0",
++           "info": {
++             "version": "2018-05-24T17:52:00Z",
++             "title": "api"
++           },
++           "host": {
++             "Fn::Join": [
++               "",
++               [
++                 "apigateway.",
++                 {
++                   "Ref": "AWS::Region"
++                 },
++                 ".amazonaws.com"
++               ]
++             ]
++           },
++           "basePath": {
++             "Fn::If": [
++               "ShouldNotCreateEnvResources",
++               "/Prod",
++               {
++                 "Fn::Join": [
++                   "",
++                   [
++                     "/",
++                     {
++                       "Ref": "env"
++                     }
++                   ]
++                 ]
++               }
++             ]
++           },
++           "schemes": [
++             "https"
++           ],
++           "paths": {
++             "/api/schools": {
++               "get": {
++                 "consumes": [
++                   "application/json"
++                 ],
++                 "produces": [
++                   "application/json"
++                 ],
++                 "responses": {
++                   "200": {
++                     "description": "200 response",
++                     "schema": {
++                       "$ref": "#/definitions/Empty"
++                     }
++                   }
++                 },
++                 "x-amazon-apigateway-integration": {
++                   "responses": {
++                     "default": {
++                       "statusCode": "200"
++                     }
++                   },
++                   "uri": {
++                     "Fn::Join": [
++                       "",
++                       [
++                         "arn:aws:apigateway:",
++                         {
++                           "Ref": "AWS::Region"
++                         },
++                         ":lambda:path/2015-03-31/functions/",
++                         {
++                           "Ref": "functionapiArn"
++                         },
++                         "/invocations"
++                       ]
++                     ]
++                   },
++                   "passthroughBehavior": "when_no_match",
++                   "httpMethod": "POST",
++                   "type": "aws_proxy"
++                 }
++               },
++               "options": {
++                 "consumes": [
++                   "application/json"
++                 ],
++                 "produces": [
++                   "application/json"
++                 ],
++                 "responses": {
++                   "200": {
++                     "description": "200 response",
++                     "schema": {
++                       "$ref": "#/definitions/Empty"
++                     },
++                     "headers": {
++                       "Access-Control-Allow-Origin": {
++                         "type": "string"
++                       },
++                       "Access-Control-Allow-Methods": {
++                         "type": "string"
++                       },
++                       "Access-Control-Allow-Headers": {
++                         "type": "string"
++                       }
++                     }
++                   }
++                 },
++                 "x-amazon-apigateway-integration": {
++                   "responses": {
++                     "default": {
++                       "statusCode": "200",
++                       "responseParameters": {
++                         "method.response.header.Access-Control-Allow-Methods": "'DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT'",
++                         "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent'",
++                         "method.response.header.Access-Control-Allow-Origin": "'*'"
++                       }
++                     }
++                   },
++                   "requestTemplates": {
++                     "application/json": "{\"statusCode\": 200}"
++                   },
++                   "passthroughBehavior": "when_no_match",
++                   "type": "mock"
++                 }
++               }
++             },
++             "/api/teams": {
++               "get": {
++                 "consumes": [
++                   "application/json"
++                 ],
++                 "produces": [
++                   "application/json"
++                 ],
++                 "responses": {
++                   "200": {
++                     "description": "200 response",
++                     "schema": {
++                       "$ref": "#/definitions/Empty"
++                     }
++                   }
++                 },
++                 "x-amazon-apigateway-integration": {
++                   "responses": {
++                     "default": {
++                       "statusCode": "200"
++                     }
++                   },
++                   "uri": {
++                     "Fn::Join": [
++                       "",
++                       [
++                         "arn:aws:apigateway:",
++                         {
++                           "Ref": "AWS::Region"
++                         },
++                         ":lambda:path/2015-03-31/functions/",
++                         {
++                           "Ref": "functionapiArn"
++                         },
++                         "/invocations"
++                       ]
++                     ]
++                   },
++                   "passthroughBehavior": "when_no_match",
++                   "httpMethod": "POST",
++                   "type": "aws_proxy"
++                 }
++               },
++               "options": {
++                 "consumes": [
++                   "application/json"
++                 ],
++                 "produces": [
++                   "application/json"
++                 ],
++                 "responses": {
++                   "200": {
++                     "description": "200 response",
++                     "schema": {
++                       "$ref": "#/definitions/Empty"
++                     },
++                     "headers": {
++                       "Access-Control-Allow-Origin": {
++                         "type": "string"
++                       },
++                       "Access-Control-Allow-Methods": {
++                         "type": "string"
++                       },
++                       "Access-Control-Allow-Headers": {
++                         "type": "string"
++                       }
++                     }
++                   }
++                 },
++                 "x-amazon-apigateway-integration": {
++                   "responses": {
++                     "default": {
++                       "statusCode": "200",
++                       "responseParameters": {
++                         "method.response.header.Access-Control-Allow-Methods": "'DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT'",
++                         "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent'",
++                         "method.response.header.Access-Control-Allow-Origin": "'*'"
++                       }
++                     }
++                   },
++                   "requestTemplates": {
++                     "application/json": "{\"statusCode\": 200}"
++                   },
++                   "passthroughBehavior": "when_no_match",
++                   "type": "mock"
++                 }
++               }
++             },
++             "/api/individuals": {
++               "get": {
++                 "consumes": [
++                   "application/json"
++                 ],
++                 "produces": [
++                   "application/json"
++                 ],
++                 "responses": {
++                   "200": {
++                     "description": "200 response",
++                     "schema": {
++                       "$ref": "#/definitions/Empty"
++                     }
++                   }
++                 },
++                 "x-amazon-apigateway-integration": {
++                   "responses": {
++                     "default": {
++                       "statusCode": "200"
++                     }
++                   },
++                   "uri": {
++                     "Fn::Join": [
++                       "",
++                       [
++                         "arn:aws:apigateway:",
++                         {
++                           "Ref": "AWS::Region"
++                         },
++                         ":lambda:path/2015-03-31/functions/",
++                         {
++                           "Ref": "functionapiArn"
++                         },
++                         "/invocations"
++                       ]
++                     ]
++                   },
++                   "passthroughBehavior": "when_no_match",
++                   "httpMethod": "POST",
++                   "type": "aws_proxy"
++                 }
++               },
++               "options": {
++                 "consumes": [
++                   "application/json"
++                 ],
++                 "produces": [
++                   "application/json"
++                 ],
++                 "responses": {
++                   "200": {
++                     "description": "200 response",
++                     "schema": {
++                       "$ref": "#/definitions/Empty"
++                     },
++                     "headers": {
++                       "Access-Control-Allow-Origin": {
++                         "type": "string"
++                       },
++                       "Access-Control-Allow-Methods": {
++                         "type": "string"
++                       },
++                       "Access-Control-Allow-Headers": {
++                         "type": "string"
++                       }
++                     }
++                   }
++                 },
++                 "x-amazon-apigateway-integration": {
++                   "responses": {
++                     "default": {
++                       "statusCode": "200",
++                       "responseParameters": {
++                         "method.response.header.Access-Control-Allow-Methods": "'DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT'",
++                         "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent'",
++                         "method.response.header.Access-Control-Allow-Origin": "'*'"
++                       }
++                     }
++                   },
++                   "requestTemplates": {
++                     "application/json": "{\"statusCode\": 200}"
++                   },
++                   "passthroughBehavior": "when_no_match",
++                   "type": "mock"
++                 }
++               }
++             },
++             "/api/axios": {
++               "get": {
++                 "consumes": [
++                   "application/json"
++                 ],
++                 "produces": [
++                   "application/json"
++                 ],
++                 "responses": {
++                   "200": {
++                     "description": "200 response",
++                     "schema": {
++                       "$ref": "#/definitions/Empty"
++                     }
++                   }
++                 },
++                 "x-amazon-apigateway-integration": {
++                   "responses": {
++                     "default": {
++                       "statusCode": "200"
++                     }
++                   },
++                   "uri": {
++                     "Fn::Join": [
++                       "",
++                       [
++                         "arn:aws:apigateway:",
++                         {
++                           "Ref": "AWS::Region"
++                         },
++                         ":lambda:path/2015-03-31/functions/",
++                         {
++                           "Ref": "functionapiArn"
++                         },
++                         "/invocations"
++                       ]
++                     ]
++                   },
++                   "passthroughBehavior": "when_no_match",
++                   "httpMethod": "POST",
++                   "type": "aws_proxy"
++                 }
++               },
++               "options": {
++                 "consumes": [
++                   "application/json"
++                 ],
++                 "produces": [
++                   "application/json"
++                 ],
++                 "responses": {
++                   "200": {
++                     "description": "200 response",
++                     "schema": {
++                       "$ref": "#/definitions/Empty"
++                     },
++                     "headers": {
++                       "Access-Control-Allow-Origin": {
++                         "type": "string"
++                       },
++                       "Access-Control-Allow-Methods": {
++                         "type": "string"
++                       },
++                       "Access-Control-Allow-Headers": {
++                         "type": "string"
++                       }
++                     }
++                   }
++                 },
++                 "x-amazon-apigateway-integration": {
++                   "responses": {
++                     "default": {
++                       "statusCode": "200",
++                       "responseParameters": {
++                         "method.response.header.Access-Control-Allow-Methods": "'DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT'",
++                         "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent'",
++                         "method.response.header.Access-Control-Allow-Origin": "'*'"
++                       }
++                     }
++                   },
++                   "requestTemplates": {
++                     "application/json": "{\"statusCode\": 200}"
++                   },
++                   "passthroughBehavior": "when_no_match",
++                   "type": "mock"
++                 }
++               }
++             }
++           },
++           "definitions": {
++             "Empty": {
++               "type": "object",
++               "title": "Empty Schema"
++             }
++           }
++         }
++       }
++     },
++     "ApiGatewayDeployment": {
++       "Type": "AWS::ApiGateway::Deployment",
++       "Properties": {
++         "RestApiId": {
++           "Ref": "ApiGatewayRestApi"
++         },
++         "StageName": "Prod"
++       }
++     },
++     "functionapiPermission": {
++       "Type": "AWS::Lambda::Permission",
++       "Properties": {
++         "FunctionName": {
++           "Ref": "functionapiName"
++         },
++         "Action": "lambda:InvokeFunction",
++         "Principal": "apigateway.amazonaws.com",
++         "SourceArn": {
++           "Fn::Join": [
++             "",
++             [
++               "arn:aws:execute-api:",
++               {
++                 "Ref": "AWS::Region"
++               },
++               ":",
++               {
++                 "Ref": "AWS::AccountId"
++               },
++               ":",
++               {
++                 "Ref": "ApiGatewayRestApi"
++               },
++               "/*/*/*"
++             ]
++           ]
++         }
++       }
++     }
++   },
++   "Outputs": {
++     "RootUrl": {
++       "Description": "Root URL of the API gateway",
++       "Value": {
++         "Fn::Join": [
++           "",
++           [
++             "https://",
++             {
++               "Ref": "ApiGatewayRestApi"
++             },
++             ".execute-api.",
++             {
++               "Ref": "AWS::Region"
++             },
++             ".amazonaws.com/Prod"
++           ]
++         ]
++       }
++     },
++     "ApiName": {
++       "Description": "API Friendly name",
++       "Value": "api"
++     },
++     "ApiId": {
++       "Description": "API ID (prefix of API URL)",
++       "Value": {
++         "Ref": "ApiGatewayRestApi"
++       }
++     }
++   }
++ } 
+```
+
+---
+
+Great! Now that we've created all the necessary configuration files, let's update the build command in your amplify.yml file to make sure it works with your static site:
+
+---
+
+```diff
+        commands:
+          - npm install
++         - npm run build
+    artifacts:
+      baseDirectory: /
+```
+
+---
+
+Now that we've created all the necessary files, let's summarize what we've done to fix the issue:
+
+## What We Fixed
+
+1. **Added the missing CloudFormation templates:**
+   - Created `amplify/backend/function/api/api-cloudformation-template.json` for the Lambda function
+   - Created `amplify/backend/api/api/api-cloudformation-template.json` for the API Gateway
+
+2. **Added team-provider-info.json:**
+   - This file is essential for Amplify to understand your environment configuration
+
+3. **Updated the build configuration:**
+   - Added the build command to `amplify.yml`
+
+## About Your Build Process
+
+To answer your specific question about the frontend build command:
+
+- Your application uses a simple build process defined in package.json:
+  ```json
+  "build": "echo 'No build step required for static site'"
+  ```
+
+- This is appropriate since your application is a static site with HTML, CSS, and vanilla JavaScript
+- There's no compilation or transpilation required like with React, Vue, or other frameworks
+
+## Next Steps
+
+1. **Commit and push these changes** to your GitHub repository
+
+2. **Restart the build in AWS Amplify Console:**
+   - Navigate to your app in Amplify Console
+   - Go to the main branch
+   - Click on "Redeploy this version"
+
+This should resolve the build error and deploy your application successfully.
+
+## Alternative Approach
+
+If you continue to face issues, an alternative approach would be to:
+
+1. Delete the current Amplify app from AWS Console
+2. Install Amplify CLI locally: `npm install -g @aws-amplify/cli`
+3. Run `amplify init` in your project to properly set up all the necessary files
+4. Run `amplify add function` to add your Lambda function and `amplify add api` to add your API Gateway
+5. Run `amplify push` to deploy the backend resources
+6. Connect your GitHub repository to Amplify Console again
+
+This approach would let Amplify CLI generate all the necessary files automatically with the correct structure.
+
+---
+
+_**User**_
+
+build logs:
+
+2025-04-14T14:24:14.780Z [INFO]: # Cloning repository: git@github.com:josh900/trophy-demo-v4.git
+
+1
+
+2025-04-14T14:24:15.368Z [INFO]: 
+
+2
+
+2025-04-14T14:24:15.369Z [INFO]: Cloning into 'trophy-demo-v4'...
+
+3
+
+2025-04-14T14:24:15.369Z [INFO]: # Switching to commit: 2f3fccfe272bc636587c948c1a502dcd9f06d18a
+
+4
+
+2025-04-14T14:24:15.383Z [INFO]: Note: switching to '2f3fccfe272bc636587c948c1a502dcd9f06d18a'.
+
+5
+
+                                 You are in 'detached HEAD' state. You can look around, make experimental
+
+6
+
+                                 changes and commit them, and you can discard any commits you make in this
+
+7
+
+                                 state without impacting any branches by switching back to a branch.
+
+8
+
+                                 If you want to create a new branch to retain commits you create, you may
+
+9
+
+                                 do so (now or later) by using -c with the switch command. Example:
+
+10
+
+                                 git switch -c <new-branch-name>
+
+11
+
+                                 Or undo this operation with:
+
+12
+
+                                 git switch -
+
+13
+
+                                 Turn off this advice by setting config variable advice.detachedHead to false
+
+14
+
+                                 HEAD is now at 2f3fccf update
+
+15
+
+2025-04-14T14:24:15.424Z [INFO]: Successfully cleaned up Git credentials
+
+16
+
+2025-04-14T14:24:15.424Z [INFO]: # Checking for Git submodules at: /codebuild/output/src1341562003/src/trophy-demo-v4/.gitmodules
+
+17
+
+2025-04-14T14:24:15.431Z [INFO]: # Retrieving environment cache...
+
+18
+
+2025-04-14T14:24:15.476Z [WARNING]: ! Unable to write cache: {"code":"ERR_BAD_REQUEST","message":"Request failed with status code 404"})}
+
+19
+
+2025-04-14T14:24:15.477Z [INFO]: ---- Setting Up SSM Secrets ----
+
+20
+
+2025-04-14T14:24:15.477Z [INFO]: SSM params {"Path":"/amplify/d3u21ki4rjrkyy/main/","WithDecryption":true}
+
+21
+
+2025-04-14T14:24:18.404Z [INFO]: # Patching NPM package '@aws-amplify/cli' from 12.8.2 to 13.0.0...
+
+22
+
+2025-04-14T14:24:44.897Z [INFO]: # Installed '@aws-amplify/cli@13.0.0'
+
+23
+
+2025-04-14T14:24:44.999Z [INFO]: # Done patching NPM package '@aws-amplify/cli' to version 13.0.0
+
+24
+
+2025-04-14T14:24:45.003Z [INFO]: # Retrieving cache...
+
+25
+
+2025-04-14T14:24:45.003Z [INFO]: # Retrieved cache
+
+26
+
+2025-04-14T14:24:49.739Z [INFO]: ## Starting Backend Build
+
+27
+
+                                 ## Checking for associated backend environment...
+
+28
+
+                                 ## Backend environment association found
+
+29
+
+2025-04-14T14:24:52.197Z [INFO]: [0mAmplify AppID found: d3u21ki4rjrkyy. Amplify App name is: trophy-demo-v4[0m
+
+30
+
+2025-04-14T14:24:52.260Z [INFO]: [0mBackend environment main found in Amplify Console app: trophy-demo-v4[0m
+
+31
+
+2025-04-14T14:24:53.536Z [WARNING]: - Fetching updates to backend environment: main from the cloud.
+
+32
+
+2025-04-14T14:24:53.857Z [WARNING]: - Building resource api/api
+
+33
+
+2025-04-14T14:24:53.932Z [WARNING]: ✔ Successfully pulled backend environment main from the cloud.
+
+34
+
+2025-04-14T14:24:53.965Z [INFO]: ✅
+
+35
+
+2025-04-14T14:24:56.064Z [INFO]: [33mNote: It is recommended to run this command from the root of your app directory[39m
+
+36
+
+2025-04-14T14:24:57.261Z [WARNING]: - Initializing your environment: main
+
+37
+
+2025-04-14T14:24:57.782Z [WARNING]: - Building resource api/api
+
+38
+
+2025-04-14T14:24:57.785Z [WARNING]: ✔ Initialized provider successfully.
+
+39
+
+2025-04-14T14:25:00.248Z [WARNING]: - Uploading files.
+
+2025-04-14T14:26:45 [INFO]: Beginning deployment for application d3u21ki4rjrkyy, branch:main, buildId 0000000004
+
+1
+
+2025-04-14T14:26:53 [INFO]: Deployment complete
+
+
+app errors:
+app.js:415  Axios attempt failed: Error: Axios endpoint responded with 404
+    at fetchSchools (app.js:404:41)
+    at async init (app.js:325:13)
+fetchSchools @ app.js:415
+/api/schools/:1 
+            
+            
+            Failed to load resource: the server responded with a status of 404 ()
+app.js:425  Error fetching schools: Error: Server responded with 404
+    at fetchSchools (app.js:419:41)
+    at async init (app.js:325:13)
+fetchSchools @ app.js:425
+app.js:328  Error loading schools data: Error: Server responded with 404
+    at fetchSchools (app.js:419:41)
+    at async init (app.js:325:13)
+init @ app.js:328
+/api/axios/?type=teams:1 
+            
+            
+            Failed to load resource: the server responded with a status of 404 ()
+app.js:446  Axios attempt failed: Error: Axios endpoint responded with 404
+    at fetchTeams (app.js:435:41)
+    at async init (app.js:335:13)
+fetchTeams @ app.js:446
+/api/teams/:1 
+            
+            
+            Failed to load resource: the server responded with a status of 404 ()
+app.js:456  Error fetching teams: Error: Server responded with 404
+    at fetchTeams (app.js:450:41)
+    at async init (app.js:335:13)
+fetchTeams @ app.js:456
+app.js:338  Error loading teams data: Error: Server responded with 404
+    at fetchTeams (app.js:450:41)
+    at async init (app.js:335:13)
+init @ app.js:338
+/api/axios/?type=individuals:1 
+            
+            
+            Failed to load resource: the server responded with a status of 404 ()
+app.js:477  Axios attempt failed: Error: Axios endpoint responded with 404
+    at fetchIndividuals (app.js:466:41)
+    at async init (app.js:345:13)
+fetchIndividuals @ app.js:477
+/api/individuals/:1 
+            
+            
+            Failed to load resource: the server responded with a status of 404 ()
+app.js:487  Error fetching individuals: Error: Server responded with 404
+    at fetchIndividuals (app.js:481:41)
+    at async init (app.js:345:13)
+fetchIndividuals @ app.js:487
+app.js:348  Error loading individuals data: Error: Server responded with 404
+    at fetchIndividuals (app.js:481:41)
+    at async init (app.js:345:13)
 
 ---
 

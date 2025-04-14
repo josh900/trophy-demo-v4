@@ -1,6 +1,13 @@
 {
   "paths": [
     {
+      "name": "/api/healthcheck",
+      "lambdaFunction": "api",
+      "permissions": {
+        "setting": "open"
+      }
+    },
+    {
       "name": "/api/schools",
       "lambdaFunction": "api",
       "permissions": {
