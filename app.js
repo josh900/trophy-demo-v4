@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
     // Application State
-    let state = {
+    const state = {
         currentView: 'schools',
         navigationHistory: [],
         schools: [],
@@ -22,7 +22,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const loadingSpinner = document.getElementById('loading-spinner');
 
     // Default Theme Colors (for resetting)
-    let defaultTheme = {
+    const defaultTheme = {
         primary: '#00205B',
         secondary: '#EFBF04',
         accent: '#000000',
