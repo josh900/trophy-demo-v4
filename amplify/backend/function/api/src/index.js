@@ -1,80 +1,122 @@
 const axios = require('axios');
 
+// Budibase API configuration
+const budibaseApiUrl = 'https://budibase.skoop.digital';
+const budibaseApiKey = '69b1bc10c2d32ee607e44e4a30f7f5ea-b9dd09ff6c773a4628f737a0ab45f9e0304e6a8c85181a90f8ff74cc29c946528f373cc83f24ae20';
+const budibaseAppId = 'app_3ea495f0892c4311badfd934783afd94';
+
 /**
  * AWS Lambda function that routes API requests to the appropriate handlers
  */
 exports.handler = async (event) => {
+  console.log(`EVENT: ${JSON.stringify(event)}`);
+  
   try {
-    // Set standard CORS headers for all responses
-    const headers = {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Requested-With',
-      'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
-      'Content-Type': 'application/json'
-    };
-
-    // Handle preflight OPTIONS requests
-    if (event.httpMethod === 'OPTIONS') {
-      return {
-        statusCode: 200,
-        headers,
-        body: JSON.stringify({ message: 'CORS preflight response' }),
-      };
-    }
+    // Safely check if path exists in the event
+    const path = event?.path || '';
     
-    // Add a healthcheck endpoint
-    if (event.path.includes('/api/healthcheck')) {
+    if (path.includes('/api/healthcheck')) {
       return {
         statusCode: 200,
-        headers,
-        body: JSON.stringify({ 
-          status: 'ok',
-          timestamp: new Date().toISOString(),
-          message: 'API is working correctly',
-          event: event
-        }),
+        headers: {
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Headers": "*",
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ status: 'ok' }),
       };
     }
 
-    // Parse the path to determine which endpoint to call
-    const path = event.path;
-    let endpoint = 'schools'; // default endpoint
+    if (path.includes('/api/schools')) {
+      return await handleAxiosRequest(
+        `${budibaseApiUrl}/api/public/v1/tables/ta_44d3fc5be5e84c9b8e87d4ea7d79bad2/rows`
+      );
+    }
 
     if (path.includes('/api/teams')) {
-      endpoint = 'teams';
-    } else if (path.includes('/api/individuals')) {
-      endpoint = 'individuals';
-    } else if (path.includes('/api/axios')) {
-      // For the axios endpoint, use the query parameter
-      const queryParams = event.queryStringParameters || {};
-      endpoint = queryParams.type || 'schools';
-      return await handleAxiosRequest(endpoint, headers);
+      return await handleAxiosRequest(
+        `${budibaseApiUrl}/api/public/v1/tables/ta_5c0c9dfe0a8640408db9c5e0e0b2c3c4/rows`
+      );
     }
 
-    // Handle the request based on endpoint
-    switch (endpoint) {
-      case 'teams':
-        return await handleTeamsRequest(headers);
-      case 'individuals':
-        return await handleIndividualsRequest(headers);
-      default: // schools
-        return await handleSchoolsRequest(headers);
+    if (path.includes('/api/individuals')) {
+      return await handleAxiosRequest(
+        `${budibaseApiUrl}/api/public/v1/tables/ta_b09aa2ee7d844a85a93c9b3df795af2e/rows`
+      );
     }
+
+    // Return 404 for unknown paths
+    return {
+      statusCode: 404,
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Headers": "*",
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ error: 'Not Found', message: `Path ${path} not found` }),
+    };
   } catch (error) {
     console.error('Error in API handler:', error);
     return {
       statusCode: 500,
       headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Content-Type': 'application/json'
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Headers": "*",
+        "Content-Type": "application/json"
       },
       body: JSON.stringify({ 
-        error: `An unexpected error occurred: ${error.message}`,
-        data: [] // Ensure data field exists even in error response
+        error: 'Internal Server Error', 
+        message: error.message || 'An unknown error occurred' 
       }),
     };
   }
 };
+
+/**
+ * Helper function to handle Axios requests to Budibase API
+ * @param {string} url - The Budibase API URL
+ * @returns {Promise<Object>} - The API Gateway response object
+ */
+async function handleAxiosRequest(url) {
+  try {
+    const response = await axios.get(url, {
+      headers: {
+        'x-budibase-api-key': budibaseApiKey,
+        'x-budibase-app-id': budibaseAppId,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    return {
+      statusCode: response.status,
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Headers": "*",
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(response.data),
+    };
+  } catch (error) {
+    console.error('Error in Axios request:', error);
+    
+    // Return appropriate error response
+    const statusCode = error.response?.status || 500;
+    const errorMessage = error.response?.data || error.message || 'Unknown error';
+    
+    return {
+      statusCode,
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Headers": "*",
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ 
+        error: statusCode === 404 ? 'Not Found' : 'Internal Server Error',
+        message: errorMessage
+      }),
+    };
+  }
+}
 
 /**
  * Handle request to the schools endpoint
@@ -188,76 +230,6 @@ async function handleIndividualsRequest(headers) {
       body: JSON.stringify({ 
         error: `Failed to fetch individuals data: ${error.message}`,
         data: [] // Ensure data field exists even in error response
-      }),
-    };
-  }
-}
-
-/**
- * Handle request to the axios combined endpoint
- */
-async function handleAxiosRequest(endpoint, headers) {
-  try {
-    let path;
-    
-    switch(endpoint) {
-      case 'teams':
-        path = '/api/public/v1/queries/query_datasource_plus_56025c99333e46b8a073e70585159c4c_a47c1c9912c34d15b67e49ec62908fa0';
-        break;
-      case 'individuals':
-        path = '/api/public/v1/queries/query_datasource_plus_56025c99333e46b8a073e70585159c4c_f62962e3b6ff47e690977d49cd6d6165';
-        break;
-      default: // schools
-        path = '/api/public/v1/queries/query_datasource_plus_56025c99333e46b8a073e70585159c4c_4a3b9f6c024c4381afcf9f4e83f85f7d';
-    }
-
-    // Make the request with axios
-    const response = await axios({
-      method: 'post',
-      url: `https://budibase.skoop.digital${path}`,
-      headers: {
-        'x-budibase-app-id': 'app_3ea495f0892c4311badfd934783afd94',
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'x-budibase-api-key': '69b1bc10c2d32ee607e44e4a30f7f5ea-b9dd09ff6c773a4628f737a0ab45f9e0304e6a8c85181a90f8ff74cc29c946528f373cc83f24ae20'
-      },
-      data: {}
-    });
-    
-    // Process the response data
-    const formattedData = formatResponseData(response.data);
-    
-    return {
-      statusCode: 200,
-      headers,
-      body: JSON.stringify({
-        success: true,
-        endpoint,
-        data: formattedData.data,
-        rawResponse: response.data // Include raw response for debugging
-      }),
-    };
-  } catch (error) {
-    console.error(`Axios error for ${endpoint}:`, error.message);
-    
-    // Try to get response details if available
-    let responseDetails = {};
-    if (error.response) {
-      responseDetails = {
-        status: error.response.status,
-        statusText: error.response.statusText,
-        headers: error.response.headers,
-        data: error.response.data
-      };
-    }
-    
-    return {
-      statusCode: 500,
-      headers,
-      body: JSON.stringify({
-        error: `Axios request failed: ${error.message}`,
-        endpoint,
-        details: responseDetails
       }),
     };
   }

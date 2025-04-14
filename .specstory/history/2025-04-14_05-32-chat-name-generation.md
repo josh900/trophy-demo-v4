@@ -2245,6 +2245,1468 @@ app.js:348  Error loading individuals data: Error: Server responded with 404
 
 ---
 
+_**Assistant**_
+
+<think>
+Let's analyze the logs and errors:
+
+1. The build is now completing successfully! This is good - our CloudFormation templates are working, and we no longer see the earlier error about missing templates.
+
+2. However, we're seeing API errors in the browser:
+   - All API calls (to /api/schools, /api/teams, /api/individuals, and /api/axios) are returning 404 errors
+   - This suggests the APIs are not properly configured or not being routed correctly
+
+The issue is likely related to how AWS Amplify is handling the API paths. AWS Amplify uses a different URL pattern for API Gateway endpoints compared to Vercel. We need to adjust the frontend code to work with Amplify's API Gateway URL structure.
+
+Let's fix this:
+</think>
+
+# API Routing Issue in AWS Amplify
+
+Good news! Your build is now completing successfully - we fixed the CloudFormation template issue. However, we have a new problem: all your API endpoints are returning 404 errors.
+
+## The Issue
+
+Based on the error logs, your application is trying to access:
+- `/api/schools`
+- `/api/teams` 
+- `/api/individuals`
+- `/api/axios?type=...`
+
+But Amplify doesn't automatically route these paths to your Lambda function. AWS Amplify uses different URL structures for API Gateway than Vercel.
+
+## How to Fix It
+
+Let's update your frontend code to use the Amplify-generated API endpoints:
+
+---
+
+```diff
+      async function fetchSchools() {
+          try {
++             // Get the API URL from environment or use default
++             const apiBaseUrl = window.API_ENDPOINT || '';
++             
+              // Try both endpoints to see which works
+              try {
+-                 const response = await fetch('/api/axios?type=schools');
++                 const response = await fetch(`${apiBaseUrl}/api/axios?type=schools`);
+                  if (!response.ok) throw new Error(`Axios endpoint responded with ${response.status}`);
+                  
+                  
+                  // Fallback to original endpoint
+-                 const response = await fetch('/api/schools');
++                 const response = await fetch(`${apiBaseUrl}/api/schools`);
+                  if (!response.ok) throw new Error(`Server responded with ${response.status}`);
+                  const data = await response.json();
+      async function fetchTeams() {
+          try {
++             // Get the API URL from environment or use default
++             const apiBaseUrl = window.API_ENDPOINT || '';
++             
+              // Try both endpoints to see which works
+              try {
+-                 const response = await fetch('/api/axios?type=teams');
++                 const response = await fetch(`${apiBaseUrl}/api/axios?type=teams`);
+                  if (!response.ok) throw new Error(`Axios endpoint responded with ${response.status}`);
+                  
+                  
+                  // Fallback to original endpoint
+-                 const response = await fetch('/api/teams');
++                 const response = await fetch(`${apiBaseUrl}/api/teams`);
+                  if (!response.ok) throw new Error(`Server responded with ${response.status}`);
+                  const data = await response.json();
+      async function fetchIndividuals() {
+          try {
++             // Get the API URL from environment or use default
++             const apiBaseUrl = window.API_ENDPOINT || '';
++             
+              // Try both endpoints to see which works
+              try {
+-                 const response = await fetch('/api/axios?type=individuals');
++                 const response = await fetch(`${apiBaseUrl}/api/axios?type=individuals`);
+                  if (!response.ok) throw new Error(`Axios endpoint responded with ${response.status}`);
+                  
+                  
+                  // Fallback to original endpoint
+-                 const response = await fetch('/api/individuals');
++                 const response = await fetch(`${apiBaseUrl}/api/individuals`);
+                  if (!response.ok) throw new Error(`Server responded with ${response.status}`);
+                  const data = await response.json();
+```
+
+---
+
+Now let's create a small script to inject the API endpoint URL into the page when it loads:
+
+---
+
+```diff
+      <!-- 🚀 Include model-viewer script -->
+      <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.5.0/model-viewer.min.js"></script>
++     
++     <!-- API Endpoint Detection -->
++     <script>
++         // Function to detect API Gateway URL based on environment
++         function detectApiEndpoint() {
++             // Check if we're running on AWS Amplify
++             if (window.location.hostname.includes('amplifyapp.com')) {
++                 // Extract the API Gateway URL from the Amplify outputs
++                 fetch('/.amplify-hosting/api-info.json')
++                     .then(response => response.json())
++                     .then(data => {
++                         if (data && data.api && data.api.api && data.api.api.RootUrl) {
++                             window.API_ENDPOINT = data.api.api.RootUrl;
++                             console.log('API Gateway URL detected:', window.API_ENDPOINT);
++                         } else {
++                             console.log('API Gateway URL not found in amplify outputs');
++                         }
++                     })
++                     .catch(error => {
++                         console.error('Error fetching API Gateway URL:', error);
++                     });
++             } else {
++                 // If not on Amplify, use relative paths
++                 window.API_ENDPOINT = '';
++                 console.log('Using relative API paths');
++             }
++         }
++         
++         // Run the detection on page load
++         detectApiEndpoint();
++     </script>
+  </head>
+  <body>
+```
+
+---
+
+Let's also update the API endpoints configuration in the Amplify API to use the right HTTP methods:
+
+---
+
+```diff
+                  }
+                },
++               "post": {
++                 "consumes": [
++                   "application/json"
++                 ],
++                 "produces": [
++                   "application/json"
++                 ],
++                 "responses": {
++                   "200": {
++                     "description": "200 response",
++                     "schema": {
++                       "$ref": "#/definitions/Empty"
++                     }
++                   }
++                 },
++                 "x-amazon-apigateway-integration": {
++                   "responses": {
++                     "default": {
++                       "statusCode": "200"
++                     }
++                   },
++                   "uri": {
++                     "Fn::Join": [
++                       "",
++                       [
++                         "arn:aws:apigateway:",
++                         {
++                           "Ref": "AWS::Region"
++                         },
++                         ":lambda:path/2015-03-31/functions/",
++                         {
++                           "Ref": "functionapiArn"
++                         },
++                         "/invocations"
++                       ]
++                     ]
++                   },
++                   "passthroughBehavior": "when_no_match",
++                   "httpMethod": "POST",
++                   "type": "aws_proxy"
++                 }
++               },
+                "options": {
+                  "consumes": [
+                  }
+                },
++               "post": {
++                 "consumes": [
++                   "application/json"
++                 ],
++                 "produces": [
++                   "application/json"
++                 ],
++                 "responses": {
++                   "200": {
++                     "description": "200 response",
++                     "schema": {
++                       "$ref": "#/definitions/Empty"
++                     }
++                   }
++                 },
++                 "x-amazon-apigateway-integration": {
++                   "responses": {
++                     "default": {
++                       "statusCode": "200"
++                     }
++                   },
++                   "uri": {
++                     "Fn::Join": [
++                       "",
++                       [
++                         "arn:aws:apigateway:",
++                         {
++                           "Ref": "AWS::Region"
++                         },
++                         ":lambda:path/2015-03-31/functions/",
++                         {
++                           "Ref": "functionapiArn"
++                         },
++                         "/invocations"
++                       ]
++                     ]
++                   },
++                   "passthroughBehavior": "when_no_match",
++                   "httpMethod": "POST",
++                   "type": "aws_proxy"
++                 }
++               },
+                "options": {
+                  "consumes": [
+                  }
+                },
++               "post": {
++                 "consumes": [
++                   "application/json"
++                 ],
++                 "produces": [
++                   "application/json"
++                 ],
++                 "responses": {
++                   "200": {
++                     "description": "200 response",
++                     "schema": {
++                       "$ref": "#/definitions/Empty"
++                     }
++                   }
++                 },
++                 "x-amazon-apigateway-integration": {
++                   "responses": {
++                     "default": {
++                       "statusCode": "200"
++                     }
++                   },
++                   "uri": {
++                     "Fn::Join": [
++                       "",
++                       [
++                         "arn:aws:apigateway:",
++                         {
++                           "Ref": "AWS::Region"
++                         },
++                         ":lambda:path/2015-03-31/functions/",
++                         {
++                           "Ref": "functionapiArn"
++                         },
++                         "/invocations"
++                       ]
++                     ]
++                   },
++                   "passthroughBehavior": "when_no_match",
++                   "httpMethod": "POST",
++                   "type": "aws_proxy"
++                 }
++               },
+                "options": {
+                  "consumes": [
+                  }
+                },
++               "post": {
++                 "consumes": [
++                   "application/json"
++                 ],
++                 "produces": [
++                   "application/json"
++                 ],
++                 "responses": {
++                   "200": {
++                     "description": "200 response",
++                     "schema": {
++                       "$ref": "#/definitions/Empty"
++                     }
++                   }
++                 },
++                 "x-amazon-apigateway-integration": {
++                   "responses": {
++                     "default": {
++                       "statusCode": "200"
++                     }
++                   },
++                   "uri": {
++                     "Fn::Join": [
++                       "",
++                       [
++                         "arn:aws:apigateway:",
++                         {
++                           "Ref": "AWS::Region"
++                         },
++                         ":lambda:path/2015-03-31/functions/",
++                         {
++                           "Ref": "functionapiArn"
++                         },
++                         "/invocations"
++                       ]
++                     ]
++                   },
++                   "passthroughBehavior": "when_no_match",
++                   "httpMethod": "POST",
++                   "type": "aws_proxy"
++                 }
++               },
+                "options": {
+                  "consumes": [
+```
+
+---
+
+Let's also add a simple healthcheck endpoint to test API connectivity:
+
+---
+
+```diff
+      }
+      
++     // Add a healthcheck endpoint
++     if (event.path.includes('/api/healthcheck')) {
++       return {
++         statusCode: 200,
++         headers,
++         body: JSON.stringify({ 
++           status: 'ok',
++           timestamp: new Date().toISOString(),
++           message: 'API is working correctly',
++           event: event
++         }),
++       };
++     }
++ 
+      // Parse the path to determine which endpoint to call
+      const path = event.path;
+```
+
+---
+
+Let's also add the healthcheck endpoint to the API Gateway configuration:
+
+---
+
+```diff
+            ],
+            "paths": {
++             "/api/healthcheck": {
++               "get": {
++                 "consumes": [
++                   "application/json"
++                 ],
++                 "produces": [
++                   "application/json"
++                 ],
++                 "responses": {
++                   "200": {
++                     "description": "200 response",
++                     "schema": {
++                       "$ref": "#/definitions/Empty"
++                     }
++                   }
++                 },
++                 "x-amazon-apigateway-integration": {
++                   "responses": {
++                     "default": {
++                       "statusCode": "200"
++                     }
++                   },
++                   "uri": {
++                     "Fn::Join": [
++                       "",
++                       [
++                         "arn:aws:apigateway:",
++                         {
++                           "Ref": "AWS::Region"
++                         },
++                         ":lambda:path/2015-03-31/functions/",
++                         {
++                           "Ref": "functionapiArn"
++                         },
++                         "/invocations"
++                       ]
++                     ]
++                   },
++                   "passthroughBehavior": "when_no_match",
++                   "httpMethod": "POST",
++                   "type": "aws_proxy"
++                 }
++               },
++               "options": {
++                 "consumes": [
++                   "application/json"
++                 ],
++                 "produces": [
++                   "application/json"
++                 ],
++                 "responses": {
++                   "200": {
++                     "description": "200 response",
++                     "schema": {
++                       "$ref": "#/definitions/Empty"
++                     },
++                     "headers": {
++                       "Access-Control-Allow-Origin": {
++                         "type": "string"
++                       },
++                       "Access-Control-Allow-Methods": {
++                         "type": "string"
++                       },
++                       "Access-Control-Allow-Headers": {
++                         "type": "string"
++                       }
++                     }
++                   }
++                 },
++                 "x-amazon-apigateway-integration": {
++                   "responses": {
++                     "default": {
++                       "statusCode": "200",
++                       "responseParameters": {
++                         "method.response.header.Access-Control-Allow-Methods": "'DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT'",
++                         "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent'",
++                         "method.response.header.Access-Control-Allow-Origin": "'*'"
++                       }
++                     }
++                   },
++                   "requestTemplates": {
++                     "application/json": "{\"statusCode\": 200}"
++                   },
++                   "passthroughBehavior": "when_no_match",
++                   "type": "mock"
++                 }
++               }
++             },
+              "/api/schools": {
+                "get": {
+```
+
+---
+
+Let's also update the API Gateway path configuration to include the healthcheck endpoint:
+
+---
+
+```diff
+  {
+    "paths": [
++     {
++       "name": "/api/healthcheck",
++       "lambdaFunction": "api",
++       "permissions": {
++         "setting": "open"
++       }
++     },
+      {
+        "name": "/api/schools",
+```
+
+---
+
+Let's also add a fallback API handling option in our frontend:
+
+---
+
+```diff
+          // Function to detect API Gateway URL based on environment
+          function detectApiEndpoint() {
++             // Manual override - uncomment and set this if auto-detection fails
++             // window.API_ENDPOINT = "https://your-api-id.execute-api.region.amazonaws.com/Prod";
++             
+              // Check if we're running on AWS Amplify
+              if (window.location.hostname.includes('amplifyapp.com')) {
+-                 // Extract the API Gateway URL from the Amplify outputs
++                 // First try to get the API URL from the Amplify outputs
+                  fetch('/.amplify-hosting/api-info.json')
+                      .then(response => response.json())
+                              console.log('API Gateway URL detected:', window.API_ENDPOINT);
+                          } else {
+-                             console.log('API Gateway URL not found in amplify outputs');
++                             console.log('API Gateway URL not found in amplify outputs, checking healthcheck endpoint...');
++                             // Try to auto-detect API URL by checking known routes
++                             checkApiHealth();
+                          }
+                      })
+                      .catch(error => {
+                          console.error('Error fetching API Gateway URL:', error);
++                         checkApiHealth();
+                      });
+              } else {
+              }
+          }
++         
++         // Function to test API healthcheck
++         function checkApiHealth() {
++             // Test various potential API endpoints
++             const hostname = window.location.hostname;
++             const region = 'us-east-1'; // default region, change if needed
++             
++             // Generate potential API URLs based on app name and region
++             const potentialApis = [
++                 '', // relative path as fallback
++                 `https://api.${hostname}`,
++                 `https://api-${hostname.split('.')[0]}.${region}.amazonaws.com/Prod`
++             ];
++             
++             // Try each API endpoint until one works
++             let apiFound = false;
++             potentialApis.forEach((apiUrl, index) => {
++                 if (!apiFound) {
++                     setTimeout(() => {
++                         fetch(`${apiUrl}/api/healthcheck`)
++                             .then(response => {
++                                 if (response.ok) {
++                                     window.API_ENDPOINT = apiUrl;
++                                     console.log('API endpoint found at:', apiUrl);
++                                     apiFound = true;
++                                 }
++                             })
++                             .catch(() => {
++                                 console.log(`API endpoint not found at: ${apiUrl}`);
++                             });
++                     }, index * 100); // Stagger requests
++                 }
++             });
++         }
+          
+          // Run the detection on page load
+```
+
+---
+
+## Summary of Changes to Fix API Issues
+
+We've made several changes to fix the API routing issues:
+
+1. **Updated Frontend API Calls**:
+   - Modified `fetchSchools`, `fetchTeams`, and `fetchIndividuals` functions to use a dynamic API endpoint URL
+   - Added a script to detect the correct API Gateway URL automatically
+
+2. **Added API Endpoint Detection**:
+   - Created a script that automatically detects the API Gateway URL in different environments
+   - Added fallback mechanism to try various potential API endpoints
+   - Included a manual override option for direct configuration
+
+3. **Expanded API Gateway Configuration**:
+   - Added POST methods to all API endpoints
+   - Added a new `/api/healthcheck` endpoint for testing connectivity
+   - Configured proper CORS headers and permissions
+
+4. **Enhanced Lambda Function**:
+   - Added a healthcheck endpoint to make detection easier
+   - Updated error handling to be more robust
+
+## Next Steps
+
+1. **Commit and push these changes** to your GitHub repository
+
+2. **Restart the build in AWS Amplify Console**:
+   - Navigate to your app in Amplify Console
+   - Go to the main branch
+   - Click on "Redeploy this version"
+
+3. **Test Connectivity**:
+   - Once deployed, access the `/api/healthcheck` endpoint directly to verify API Gateway is working
+   - Check the browser console for API detection messages
+
+4. **Manual Configuration (if needed)**:
+   - If auto-detection still fails, you can manually set the API endpoint URL by uncommenting and setting `window.API_ENDPOINT` in the index.html file
+
+These changes should solve the 404 errors by ensuring your frontend application can properly connect to the API Gateway endpoints created by Amplify.
+
+---
+
+_**User**_
+
+build logs:
+
+66
+
+2025-04-14T14:38:13.648Z [INFO]: 
+
+67
+
+2025-04-14T14:38:13.777Z [INFO]: ✅ Initialized your environment successfully.
+
+68
+
+2025-04-14T14:38:13.778Z [INFO]: ✅ Your project has been successfully initialized and connected to the cloud!
+
+69
+
+                                 Some next steps:
+
+70
+
+                                 "amplify status" will show you what you've added already and if it's locally configured or deployed
+
+71
+
+                                 "amplify add <category>" will allow you to add features like user login or a backend API
+
+72
+
+                                 "amplify push" will build all your local backend resources and provision it in the cloud
+
+73
+
+                                 "amplify console" to open the Amplify Console and view your project status
+
+74
+
+                                 "amplify publish" will build all your local backend and frontend resources (if you have hosting category added) and provision it in the cloud
+
+75
+
+                                 Pro tip:
+
+76
+
+                                 Try "amplify add api" to create a backend API and then "amplify push" to deploy everything
+
+77
+
+2025-04-14T14:38:15.255Z [INFO]: ## Completed Backend Build
+
+78
+
+2025-04-14T14:38:15.260Z [INFO]: ## Starting Frontend Build
+
+79
+
+                                 # Starting phase: build
+
+80
+
+                                 # Executing command: npm install
+
+81
+
+2025-04-14T14:38:17.915Z [INFO]: added 108 packages, and audited 109 packages in 2s
+
+82
+
+2025-04-14T14:38:17.919Z [INFO]: 30 packages are looking for funding
+
+83
+
+                                 run `npm fund` for details
+
+84
+
+                                 found 0 vulnerabilities
+
+85
+
+2025-04-14T14:38:17.929Z [INFO]: # Executing command: npm run build
+
+86
+
+2025-04-14T14:38:18.238Z [INFO]: > saginaw-trophy-case@1.0.0 build
+
+87
+
+                                 > echo 'No build step required for static site'
+
+88
+
+2025-04-14T14:38:18.245Z [INFO]: No build step required for static site
+
+89
+
+2025-04-14T14:38:18.253Z [INFO]: # Completed phase: build
+
+90
+
+                                 ## Completed Frontend Build
+
+91
+
+2025-04-14T14:38:18.550Z [INFO]: ## Build completed successfully
+
+92
+
+2025-04-14T14:38:18.554Z [INFO]: Found customHeaders section in amplify.yml, applying custom headers...
+
+93
+
+2025-04-14T14:38:18.555Z [WARNING]: [DEPRECATION WARNING] using amplify.yml to modify custom headers is being deprecated.
+
+94
+
+2025-04-14T14:38:18.555Z [WARNING]: Going forward, in order to configure your custom headers via deploy, please use customHttp.yml instead.
+
+95
+
+2025-04-14T14:38:18.555Z [WARNING]: Learn more: https://docs.aws.amazon.com/amplify/latest/userguide/custom-headers.html
+
+96
+
+2025-04-14T14:38:18.555Z [INFO]: # Found custom headers config file.
+
+97
+
+2025-04-14T14:38:18.675Z [INFO]: # Starting build artifact upload process...
+
+98
+
+2025-04-14T14:38:19.614Z [INFO]: # Uploading build artifact '__artifacts.zip'...
+
+99
+
+2025-04-14T14:38:19.780Z [INFO]: # Build artifact upload completed
+
+100
+
+2025-04-14T14:38:19.781Z [INFO]: # Starting environment caching...
+
+101
+
+2025-04-14T14:38:19.781Z [INFO]: # Uploading environment cache artifact...
+
+102
+
+2025-04-14T14:38:19.859Z [INFO]: # Uploaded environment cache artifact
+
+103
+
+2025-04-14T14:38:19.859Z [INFO]: # Environment caching completed
+
+104
+
+
+
+
+
+app errors:
+lockdown-install.js:1 Removing unpermitted intrinsics
+(index):22 
+            
+            
+            GET https://main.d3u21ki4rjrkyy.amplifyapp.com/.amplify-hosting/api-info.json 404 (Not Found)
+detectApiEndpoint @ (index):22
+(anonymous) @ (index):80
+[NEW] Explain Console errors by using Copilot in Edge: click
+         
+         to explain an error. 
+        Learn more
+        Don't show again
+(index):35  Error fetching API Gateway URL: SyntaxError: Unexpected token '<', "<!DOCTYPE "... is not valid JSON
+(anonymous) @ (index):35
+Promise.catch
+detectApiEndpoint @ (index):34
+(anonymous) @ (index):80
+(index):63 
+            
+            
+            GET https://main.d3u21ki4rjrkyy.amplifyapp.com/api/healthcheck/ 404 (Not Found)
+(anonymous) @ (index):63
+setTimeout
+(anonymous) @ (index):62
+checkApiHealth @ (index):60
+(anonymous) @ (index):36
+Promise.catch
+detectApiEndpoint @ (index):34
+(anonymous) @ (index):80
+(index):63 
+            
+            
+            GET https://api-main.us-east-1.amazonaws.com/Prod/api/healthcheck net::ERR_NAME_NOT_RESOLVED
+(anonymous) @ (index):63
+setTimeout
+(anonymous) @ (index):62
+checkApiHealth @ (index):60
+(anonymous) @ (index):36
+Promise.catch
+detectApiEndpoint @ (index):34
+(anonymous) @ (index):80
+(index):72 API endpoint not found at: https://api-main.us-east-1.amazonaws.com/Prod
+app.js:406 
+            
+            
+            GET https://main.d3u21ki4rjrkyy.amplifyapp.com/api/axios/?type=schools 404 (Not Found)
+fetchSchools @ app.js:406
+init @ app.js:325
+(anonymous) @ app.js:1409
+app.js:418  Axios attempt failed: Error: Axios endpoint responded with 404
+    at fetchSchools (app.js:407:41)
+    at async init (app.js:325:13)
+fetchSchools @ app.js:418
+await in fetchSchools
+init @ app.js:325
+(anonymous) @ app.js:1409
+main.d3u21ki4rjrkyy.amplifyapp.com/:1  Access to fetch at 'https://api.main.d3u21ki4rjrkyy.amplifyapp.com/api/healthcheck' from origin 'https://main.d3u21ki4rjrkyy.amplifyapp.com' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.
+(index):63 
+            
+            
+            GET https://api.main.d3u21ki4rjrkyy.amplifyapp.com/api/healthcheck net::ERR_FAILED 404 (Not Found)
+(anonymous) @ (index):63
+setTimeout
+(anonymous) @ (index):62
+checkApiHealth @ (index):60
+(anonymous) @ (index):36
+Promise.catch
+detectApiEndpoint @ (index):34
+(anonymous) @ (index):80
+(index):72 API endpoint not found at: https://api.main.d3u21ki4rjrkyy.amplifyapp.com
+app.js:421 
+            
+            
+            GET https://main.d3u21ki4rjrkyy.amplifyapp.com/api/schools/ 404 (Not Found)
+fetchSchools @ app.js:421
+await in fetchSchools
+init @ app.js:325
+(anonymous) @ app.js:1409
+app.js:428  Error fetching schools: Error: Server responded with 404
+    at fetchSchools (app.js:422:41)
+    at async init (app.js:325:13)
+fetchSchools @ app.js:428
+await in fetchSchools
+init @ app.js:325
+(anonymous) @ app.js:1409
+app.js:328  Error loading schools data: Error: Server responded with 404
+    at fetchSchools (app.js:422:41)
+    at async init (app.js:325:13)
+init @ app.js:328
+await in init
+(anonymous) @ app.js:1409
+app.js:440 
+            
+            
+            GET https://main.d3u21ki4rjrkyy.amplifyapp.com/api/axios/?type=teams 404 (Not Found)
+fetchTeams @ app.js:440
+init @ app.js:335
+await in init
+(anonymous) @ app.js:1409
+app.js:452  Axios attempt failed: Error: Axios endpoint responded with 404
+    at fetchTeams (app.js:441:41)
+    at async init (app.js:335:13)
+fetchTeams @ app.js:452
+await in fetchTeams
+init @ app.js:335
+await in init
+(anonymous) @ app.js:1409
+app.js:455 
+            
+            
+            GET https://main.d3u21ki4rjrkyy.amplifyapp.com/api/teams/ 404 (Not Found)
+fetchTeams @ app.js:455
+await in fetchTeams
+init @ app.js:335
+await in init
+(anonymous) @ app.js:1409
+app.js:462  Error fetching teams: Error: Server responded with 404
+    at fetchTeams (app.js:456:41)
+    at async init (app.js:335:13)
+fetchTeams @ app.js:462
+await in fetchTeams
+init @ app.js:335
+await in init
+(anonymous) @ app.js:1409
+app.js:338  Error loading teams data: Error: Server responded with 404
+    at fetchTeams (app.js:456:41)
+    at async init (app.js:335:13)
+init @ app.js:338
+await in init
+(anonymous) @ app.js:1409
+app.js:474 
+            
+            
+            GET https://main.d3u21ki4rjrkyy.amplifyapp.com/api/axios/?type=individuals 404 (Not Found)
+fetchIndividuals @ app.js:474
+init @ app.js:345
+await in init
+(anonymous) @ app.js:1409
+app.js:486  Axios attempt failed: Error: Axios endpoint responded with 404
+    at fetchIndividuals (app.js:475:41)
+    at async init (app.js:345:13)
+fetchIndividuals @ app.js:486
+await in fetchIndividuals
+init @ app.js:345
+await in init
+(anonymous) @ app.js:1409
+app.js:489 
+            
+            
+            GET https://main.d3u21ki4rjrkyy.amplifyapp.com/api/individuals/ 404 (Not Found)
+fetchIndividuals @ app.js:489
+await in fetchIndividuals
+init @ app.js:345
+await in init
+(anonymous) @ app.js:1409
+app.js:496  Error fetching individuals: Error: Server responded with 404
+    at fetchIndividuals (app.js:490:41)
+    at async init (app.js:345:13)
+fetchIndividuals @ app.js:496
+await in fetchIndividuals
+init @ app.js:345
+await in init
+(anonymous) @ app.js:1409
+app.js:348  Error loading individuals data: Error: Server responded with 404
+    at fetchIndividuals (app.js:490:41)
+    at async init (app.js:345:13)
+init @ app.js:348
+await in init
+(anonymous) @ app.js:1409
+
+
+backend logs:
+Latest deployment activity
+
+View in CloudFormation
+
+1
+
+Time
+Resource ID
+Deployment status
+Reason
+4/14/2025, 7:37:42 AM	amplify-trophydemov4-main-145dc	
+ UPDATE_COMPLETE
+-
+4/14/2025, 7:37:20 AM	amplify-trophydemov4-main-145dc	
+ UPDATE_COMPLETE_CLEANUP_IN_PROGRESS
+-
+4/14/2025, 7:36:42 AM	amplify-trophydemov4-main-145dc	
+ UPDATE_IN_PROGRESS
+Amplify backend deployment initiated.
+4/14/2025, 7:26:19 AM	amplify-trophydemov4-main-145dc	
+ UPDATE_COMPLETE
+-
+4/14/2025, 7:26:18 AM	amplify-trophydemov4-main-145dc	
+ UPDATE_COMPLETE_CLEANUP_IN_PROGRESS
+-
+4/14/2025, 7:25:01 AM	amplify-trophydemov4-main-145dc	
+ UPDATE_IN_PROGRESS
+Amplify backend deployment initiated.
+4/13/2025, 11:27:35 PM	amplify-trophydemov4-main-145dc	
+ CREATE_COMPLETE
+-
+4/13/2025, 11:27:10 PM	amplify-trophydemov4-main-145dc	
+ CREATE_IN_PROGRESS
+Amplify backend deployment initiated.
+Edit backend
+
+Deployed functions resources
+Resource name
+Last modified
+api 	9 minutes ago
+
+Deployed rest resources
+Resource name
+Last modified
+api 	10 minutes ago
+
+
+Resources
+API actions
+Deploy API
+Create resource
+
+ /
+
+/api
+
+/axios
+GET
+OPTIONS
+POST
+
+/healthcheck
+GET
+OPTIONS
+
+/individuals
+GET
+OPTIONS
+POST
+
+/schools
+GET
+OPTIONS
+POST
+
+/teams
+GET
+OPTIONS
+POST
+Resource details
+Update documentation
+Enable CORS
+Path
+/
+Resource ID
+gfll25pz9a
+Methods (0)
+Delete
+Create method
+
+/api/healthcheck - GET method test results
+Request
+/api/healthcheck
+Latency ms
+592
+Status
+200
+Response body
+{"status":"ok","timestamp":"2025-04-14T14:49:19.742Z","message":"API is working correctly","event":{"resource":"/api/healthcheck","path":"/api/healthcheck","httpMethod":"GET","headers":null,"multiValueHeaders":null,"queryStringParameters":null,"multiValueQueryStringParameters":null,"pathParameters":null,"stageVariables":null,"requestContext":{"resourceId":"hg6ezm","resourcePath":"/api/healthcheck","httpMethod":"GET","extendedRequestId":"JBIBbHlXIAMF04g=","requestTime":"14/Apr/2025:14:49:19 +0000","path":"/api/healthcheck","accountId":"984369402869","protocol":"HTTP/1.1","stage":"test-invoke-stage","domainPrefix":"testPrefix","requestTimeEpoch":1744642159156,"requestId":"1f47f7ab-cf09-48f7-8625-c2116667170c","identity":{"cognitoIdentityPoolId":null,"cognitoIdentityId":null,"apiKey":"test-invoke-api-key","principalOrgId":null,"cognitoAuthenticationType":null,"userArn":"arn:aws:iam::984369402869:root","apiKeyId":"test-invoke-api-key-id","userAgent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36 Edg/136.0.0.0","accountId":"984369402869","caller":"984369402869","sourceIp":"test-invoke-source-ip","accessKey":"ASIA6KMH5CP27GQTE3AP","cognitoAuthenticationProvider":null,"user":"984369402869"},"domainName":"testPrefix.testDomainName","apiId":"72w9r9ffd8"},"body":null,"isBase64Encoded":false}}
+Response headers
+{
+  "Access-Control-Allow-Headers": "Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Requested-With",
+  "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
+  "Access-Control-Allow-Origin": "*",
+  "Content-Type": "application/json",
+  "X-Amzn-Trace-Id": "Root=1-67fd206f-72fd587d5d2452164fe609e8;Parent=34df63f91bc7856d;Sampled=0;Lineage=1:d3ab409f:0"
+}
+Logs
+Execution log for request 1f47f7ab-cf09-48f7-8625-c2116667170c
+Mon Apr 14 14:49:19 UTC 2025 : Starting execution for request: 1f47f7ab-cf09-48f7-8625-c2116667170c
+Mon Apr 14 14:49:19 UTC 2025 : HTTP Method: GET, Resource Path: /api/healthcheck
+Mon Apr 14 14:49:19 UTC 2025 : Method request path: {}
+Mon Apr 14 14:49:19 UTC 2025 : Method request query string: {}
+Mon Apr 14 14:49:19 UTC 2025 : Method request headers: {}
+Mon Apr 14 14:49:19 UTC 2025 : Method request body before transformations: 
+Mon Apr 14 14:49:19 UTC 2025 : Endpoint request URI: https://lambda.us-east-1.amazonaws.com/2015-03-31/functions/arn:aws:lambda:us-east-1:984369402869:function:api-main/invocations
+Mon Apr 14 14:49:19 UTC 2025 : Endpoint request headers: {X-Amz-Date=20250414T144919Z, x-amzn-apigateway-api-id=72w9r9ffd8, Accept=application/json, User-Agent=AmazonAPIGateway_72w9r9ffd8, Host=lambda.us-east-1.amazonaws.com, X-Amz-Content-Sha256=a69dd1e862d037294d0e995ed759855d2b285dfd0f4fd3af63b37b4cde40bcf2, X-Amzn-Trace-Id=Root=1-67fd206f-72fd587d5d2452164fe609e8, x-amzn-lambda-integration-tag=1f47f7ab-cf09-48f7-8625-c2116667170c, Authorization=*********************************************************************************************************************************************************************************************************************************************************************************************************************************************159a93, X-Amz-Source-Arn=arn:aws:execute-api:us-east-1:984369402869:72w9r9ffd8/test-invoke-stage/GET/api/healthcheck, X-Amz-Security-Token=IQoJb3JpZ2luX2VjEI3//////////wEaCXVzLWVhc3QtMSJGMEQCICWZ1Vykf7p78TB/arfbLd2aOwxJALnKmUIE2n7x0p3KAiBoEtKkUbBRBjUjQ2bZ2jy0MdonlaWPVi [TRUNCATED]
+Mon Apr 14 14:49:19 UTC 2025 : Endpoint request body after transformations: {"resource":"/api/healthcheck","path":"/api/healthcheck","httpMethod":"GET","headers":null,"multiValueHeaders":null,"queryStringParameters":null,"multiValueQueryStringParameters":null,"pathParameters":null,"stageVariables":null,"requestContext":{"resourceId":"hg6ezm","resourcePath":"/api/healthcheck","httpMethod":"GET","extendedRequestId":"JBIBbHlXIAMF04g=","requestTime":"14/Apr/2025:14:49:19 +0000","path":"/api/healthcheck","accountId":"984369402869","protocol":"HTTP/1.1","stage":"test-invoke-stage","domainPrefix":"testPrefix","requestTimeEpoch":1744642159156,"requestId":"1f47f7ab-cf09-48f7-8625-c2116667170c","identity":{"cognitoIdentityPoolId":null,"cognitoIdentityId":null,"apiKey":"test-invoke-api-key","principalOrgId":null,"cognitoAuthenticationType":null,"userArn":"arn:aws:iam::984369402869:root","apiKeyId":"test-invoke-api-key-id","userAgent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36 Edg/1 [TRUNCATED]
+Mon Apr 14 14:49:19 UTC 2025 : Sending request to https://lambda.us-east-1.amazonaws.com/2015-03-31/functions/arn:aws:lambda:us-east-1:984369402869:function:api-main/invocations
+Mon Apr 14 14:49:19 UTC 2025 : Received response. Status: 200, Integration latency: 589 ms
+Mon Apr 14 14:49:19 UTC 2025 : Endpoint response headers: {Date=Mon, 14 Apr 2025 14:49:19 GMT, Content-Type=application/json, Content-Length=1771, Connection=keep-alive, x-amzn-RequestId=0c8c9485-e3b6-4187-bae2-dd226905ef3a, x-amzn-Remapped-Content-Length=0, X-Amz-Executed-Version=$LATEST, X-Amzn-Trace-Id=Root=1-67fd206f-72fd587d5d2452164fe609e8;Parent=34df63f91bc7856d;Sampled=0;Lineage=1:d3ab409f:0}
+Mon Apr 14 14:49:19 UTC 2025 : Endpoint response body before transformations: {"statusCode":200,"headers":{"Access-Control-Allow-Origin":"*","Access-Control-Allow-Headers":"Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Requested-With","Access-Control-Allow-Methods":"GET,POST,OPTIONS","Content-Type":"application/json"},"body":"{\"status\":\"ok\",\"timestamp\":\"2025-04-14T14:49:19.742Z\",\"message\":\"API is working correctly\",\"event\":{\"resource\":\"/api/healthcheck\",\"path\":\"/api/healthcheck\",\"httpMethod\":\"GET\",\"headers\":null,\"multiValueHeaders\":null,\"queryStringParameters\":null,\"multiValueQueryStringParameters\":null,\"pathParameters\":null,\"stageVariables\":null,\"requestContext\":{\"resourceId\":\"hg6ezm\",\"resourcePath\":\"/api/healthcheck\",\"httpMethod\":\"GET\",\"extendedRequestId\":\"JBIBbHlXIAMF04g=\",\"requestTime\":\"14/Apr/2025:14:49:19 +0000\",\"path\":\"/api/healthcheck\",\"accountId\":\"984369402869\",\"protocol\":\"HTTP/1.1\",\"stage\":\"test-invoke-stage\",\"domainPrefix\":\"testPrefix\",\"requestT [TRUNCATED]
+Mon Apr 14 14:49:19 UTC 2025 : Method response body after transformations: {"status":"ok","timestamp":"2025-04-14T14:49:19.742Z","message":"API is working correctly","event":{"resource":"/api/healthcheck","path":"/api/healthcheck","httpMethod":"GET","headers":null,"multiValueHeaders":null,"queryStringParameters":null,"multiValueQueryStringParameters":null,"pathParameters":null,"stageVariables":null,"requestContext":{"resourceId":"hg6ezm","resourcePath":"/api/healthcheck","httpMethod":"GET","extendedRequestId":"JBIBbHlXIAMF04g=","requestTime":"14/Apr/2025:14:49:19 +0000","path":"/api/healthcheck","accountId":"984369402869","protocol":"HTTP/1.1","stage":"test-invoke-stage","domainPrefix":"testPrefix","requestTimeEpoch":1744642159156,"requestId":"1f47f7ab-cf09-48f7-8625-c2116667170c","identity":{"cognitoIdentityPoolId":null,"cognitoIdentityId":null,"apiKey":"test-invoke-api-key","principalOrgId":null,"cognitoAuthenticationType":null,"userArn":"arn:aws:iam::984369402869:root","apiKeyId":"test-invoke-api-key-id","userAgent":"Mozilla/5.0 (Window [TRUNCATED]
+Mon Apr 14 14:49:19 UTC 2025 : Method response headers: {Access-Control-Allow-Origin=*, Access-Control-Allow-Headers=Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Requested-With, Access-Control-Allow-Methods=GET,POST,OPTIONS, Content-Type=application/json, X-Amzn-Trace-Id=Root=1-67fd206f-72fd587d5d2452164fe609e8;Parent=34df63f91bc7856d;Sampled=0;Lineage=1:d3ab409f:0}
+Mon Apr 14 14:49:19 UTC 2025 : Successfully completed execution
+Mon Apr 14 14:49:19 UTC 2025 : Method completed with status: 200
+
+/api/axios - GET method test results
+Request
+/api/axios
+Latency ms
+1965
+Status
+200
+Response body
+{"success":true,"endpoint":"schools","data":[{"rowNumber":2,"_id":2,"name":"Saginaw High","primary_color":"#000000","secondary_color":"#EFBF04","accent_color":"#757575","media_url":"https://saginaw-trophy-media.s3.amazonaws.com/items/schools-[2].webp"},{"rowNumber":3,"_id":3,"name":"Arthur Hill","primary_color":"#000080","secondary_color":"#EFBF04","accent_color":"#757575","media_url":"https://saginaw-trophy-media.s3.amazonaws.com/items/schools-[3].webp"},{"rowNumber":4,"_id":4,"name":"Saginaw United","primary_color":"#000000","secondary_color":"#EFBF04","accent_color":"#757575","media_url":"https://saginaw-trophy-media.s3.amazonaws.com/items/schools-[4].webp"}],"rawResponse":{"data":[{"rowNumber":2,"_id":2,"name":"Saginaw High","primary_color":"#000000","secondary_color":"#EFBF04","accent_color":"#757575","media_url":"https://saginaw-trophy-media.s3.amazonaws.com/items/schools-[2].webp"},{"rowNumber":3,"_id":3,"name":"Arthur Hill","primary_color":"#000080","secondary_color":"#EFBF04","accent_color":"#757575","media_url":"https://saginaw-trophy-media.s3.amazonaws.com/items/schools-[3].webp"},{"rowNumber":4,"_id":4,"name":"Saginaw United","primary_color":"#000000","secondary_color":"#EFBF04","accent_color":"#757575","media_url":"https://saginaw-trophy-media.s3.amazonaws.com/items/schools-[4].webp"}],"extra":{}}}
+Response headers
+{
+  "Access-Control-Allow-Headers": "Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Requested-With",
+  "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
+  "Access-Control-Allow-Origin": "*",
+  "Content-Type": "application/json",
+  "X-Amzn-Trace-Id": "Root=1-67fd207f-ac26bbdfa2fca9f1be036cda;Parent=006220da6499c0a4;Sampled=0;Lineage=1:d3ab409f:0"
+}
+Logs
+Execution log for request a6b7ddbe-9642-4553-8862-5d4b653e42eb
+Mon Apr 14 14:49:35 UTC 2025 : Starting execution for request: a6b7ddbe-9642-4553-8862-5d4b653e42eb
+Mon Apr 14 14:49:35 UTC 2025 : HTTP Method: GET, Resource Path: /api/axios
+Mon Apr 14 14:49:35 UTC 2025 : Method request path: {}
+Mon Apr 14 14:49:35 UTC 2025 : Method request query string: {}
+Mon Apr 14 14:49:35 UTC 2025 : Method request headers: {}
+Mon Apr 14 14:49:35 UTC 2025 : Method request body before transformations: 
+Mon Apr 14 14:49:35 UTC 2025 : Endpoint request URI: https://lambda.us-east-1.amazonaws.com/2015-03-31/functions/arn:aws:lambda:us-east-1:984369402869:function:api-main/invocations
+Mon Apr 14 14:49:35 UTC 2025 : Endpoint request headers: {X-Amz-Date=20250414T144935Z, x-amzn-apigateway-api-id=72w9r9ffd8, Accept=application/json, User-Agent=AmazonAPIGateway_72w9r9ffd8, Host=lambda.us-east-1.amazonaws.com, X-Amz-Content-Sha256=159acab4e3cb4883f0c18127c01ca159d022c390444b85e86ff3679095b9bb58, X-Amzn-Trace-Id=Root=1-67fd207f-ac26bbdfa2fca9f1be036cda, x-amzn-lambda-integration-tag=a6b7ddbe-9642-4553-8862-5d4b653e42eb, Authorization=*********************************************************************************************************************************************************************************************************************************************************************************************************************************************1583f4, X-Amz-Source-Arn=arn:aws:execute-api:us-east-1:984369402869:72w9r9ffd8/test-invoke-stage/GET/api/axios, X-Amz-Security-Token=IQoJb3JpZ2luX2VjEI7//////////wEaCXVzLWVhc3QtMSJGMEQCIEThojdBHzk+nWz9zfl+Gijw0Hdi4C5m5y5UZr93NrCqAiBmZ4e9OZBqo+2IcZmB4IblR1cSqDbjzdDSb2g5 [TRUNCATED]
+Mon Apr 14 14:49:35 UTC 2025 : Endpoint request body after transformations: {"resource":"/api/axios","path":"/api/axios","httpMethod":"GET","headers":null,"multiValueHeaders":null,"queryStringParameters":null,"multiValueQueryStringParameters":null,"pathParameters":null,"stageVariables":null,"requestContext":{"resourceId":"qw24y6","resourcePath":"/api/axios","httpMethod":"GET","extendedRequestId":"JBID-GLLoAMF_6g=","requestTime":"14/Apr/2025:14:49:35 +0000","path":"/api/axios","accountId":"984369402869","protocol":"HTTP/1.1","stage":"test-invoke-stage","domainPrefix":"testPrefix","requestTimeEpoch":1744642175466,"requestId":"a6b7ddbe-9642-4553-8862-5d4b653e42eb","identity":{"cognitoIdentityPoolId":null,"cognitoIdentityId":null,"apiKey":"test-invoke-api-key","principalOrgId":null,"cognitoAuthenticationType":null,"userArn":"arn:aws:iam::984369402869:root","apiKeyId":"test-invoke-api-key-id","userAgent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36 Edg/136.0.0.0","accountId":"9 [TRUNCATED]
+Mon Apr 14 14:49:35 UTC 2025 : Sending request to https://lambda.us-east-1.amazonaws.com/2015-03-31/functions/arn:aws:lambda:us-east-1:984369402869:function:api-main/invocations
+Mon Apr 14 14:49:37 UTC 2025 : Received response. Status: 200, Integration latency: 1963 ms
+Mon Apr 14 14:49:37 UTC 2025 : Endpoint response headers: {Date=Mon, 14 Apr 2025 14:49:37 GMT, Content-Type=application/json, Content-Length=1746, Connection=keep-alive, x-amzn-RequestId=fc409be0-6de4-4aea-a6c2-e61f72c74ced, x-amzn-Remapped-Content-Length=0, X-Amz-Executed-Version=$LATEST, X-Amzn-Trace-Id=Root=1-67fd207f-ac26bbdfa2fca9f1be036cda;Parent=006220da6499c0a4;Sampled=0;Lineage=1:d3ab409f:0}
+Mon Apr 14 14:49:37 UTC 2025 : Endpoint response body before transformations: {"statusCode":200,"headers":{"Access-Control-Allow-Origin":"*","Access-Control-Allow-Headers":"Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Requested-With","Access-Control-Allow-Methods":"GET,POST,OPTIONS","Content-Type":"application/json"},"body":"{\"success\":true,\"endpoint\":\"schools\",\"data\":[{\"rowNumber\":2,\"_id\":2,\"name\":\"Saginaw High\",\"primary_color\":\"#000000\",\"secondary_color\":\"#EFBF04\",\"accent_color\":\"#757575\",\"media_url\":\"https://saginaw-trophy-media.s3.amazonaws.com/items/schools-[2].webp\"},{\"rowNumber\":3,\"_id\":3,\"name\":\"Arthur Hill\",\"primary_color\":\"#000080\",\"secondary_color\":\"#EFBF04\",\"accent_color\":\"#757575\",\"media_url\":\"https://saginaw-trophy-media.s3.amazonaws.com/items/schools-[3].webp\"},{\"rowNumber\":4,\"_id\":4,\"name\":\"Saginaw United\",\"primary_color\":\"#000000\",\"secondary_color\":\"#EFBF04\",\"accent_color\":\"#757575\",\"media_url\":\"https://saginaw-trophy-media.s3.amazonaws.com [TRUNCATED]
+Mon Apr 14 14:49:37 UTC 2025 : Method response body after transformations: {"success":true,"endpoint":"schools","data":[{"rowNumber":2,"_id":2,"name":"Saginaw High","primary_color":"#000000","secondary_color":"#EFBF04","accent_color":"#757575","media_url":"https://saginaw-trophy-media.s3.amazonaws.com/items/schools-[2].webp"},{"rowNumber":3,"_id":3,"name":"Arthur Hill","primary_color":"#000080","secondary_color":"#EFBF04","accent_color":"#757575","media_url":"https://saginaw-trophy-media.s3.amazonaws.com/items/schools-[3].webp"},{"rowNumber":4,"_id":4,"name":"Saginaw United","primary_color":"#000000","secondary_color":"#EFBF04","accent_color":"#757575","media_url":"https://saginaw-trophy-media.s3.amazonaws.com/items/schools-[4].webp"}],"rawResponse":{"data":[{"rowNumber":2,"_id":2,"name":"Saginaw High","primary_color":"#000000","secondary_color":"#EFBF04","accent_color":"#757575","media_url":"https://saginaw-trophy-media.s3.amazonaws.com/items/schools-[2].webp"},{"rowNumber":3,"_id":3,"name":"Arthur Hill","primary_color":"#000080","seconda [TRUNCATED]
+Mon Apr 14 14:49:37 UTC 2025 : Method response headers: {Access-Control-Allow-Origin=*, Access-Control-Allow-Headers=Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Requested-With, Access-Control-Allow-Methods=GET,POST,OPTIONS, Content-Type=application/json, X-Amzn-Trace-Id=Root=1-67fd207f-ac26bbdfa2fca9f1be036cda;Parent=006220da6499c0a4;Sampled=0;Lineage=1:d3ab409f:0}
+Mon Apr 14 14:49:37 UTC 2025 : Successfully completed execution
+Mon Apr 14 14:49:37 UTC 2025 : Method completed with status: 200
+
+Request
+/api/individuals
+Latency ms
+666
+Status
+200
+Response body
+{"data":[{"rowNumber":2,"_id":2,"school_name":"Saginaw High","team_sport":"Men's Basketball","team_year":"2023","type":"player","name":"John Doe","media_url":"https://saginaw-trophy-media.s3.amazonaws.com/items/individuals-[2].webp","number":"23","position":"Guard","graduation_year":"","sport":"","college":"Basketball","professional_team":"","points_per_game":"","assists":"18.5","rebounds":"5.2","passing_yards":"4.1"},{"rowNumber":3,"_id":3,"school_name":"Saginaw High","team_sport":"Men's Basketball","team_year":"2022","type":"player","name":"John Doe","media_url":"https://saginaw-trophy-media.s3.amazonaws.com/items/individuals-[2].webp","number":"23","position":"Guard","graduation_year":"","sport":"","college":"Basketball","professional_team":"","points_per_game":"","assists":"16.7","rebounds":"4.8","passing_yards":"3.9"},{"rowNumber":4,"_id":4,"school_name":"Saginaw High","team_sport":"Men's Basketball","team_year":"2023","type":"player","name":"Alex Johnson","media_url":"placeholder_url","number":"5","position":"Forward","graduation_year":"","sport":"","college":"Basketball","professional_team":"","points_per_game":"","assists":"12.3","rebounds":"2.5","passing_yards":"7.4"},{"rowNumber":5,"_id":5,"school_name":"Saginaw High","team_sport":"Men's Basketball","team_year":"2022","type":"player","name":"Alex Johnson","media_url":"https://saginaw-trophy-media.s3.amazonaws.com/items/individuals-[5].webp","number":"5","position":"Forward","graduation_year":"","sport":"","college":"Basketball","professional_team":"","points_per_game":"","assists":"10.8","rebounds":"2.8","passing_yards":"6.9"},{"rowNumber":6,"_id":6,"school_name":"Arthur Hill","team_sport":"Women's Basketball","team_year":"2022","type":"player","name":"Sarah Johnson","media_url":"https://saginaw-trophy-media.s3.amazonaws.com/items/individuals-[6].webp","number":"11","position":"Forward","graduation_year":"","sport":"","college":"Basketball","professional_team":"","points_per_game":"","assists":"15.8","rebounds":"3.2","passing_yards":"8.4"},{"rowNumber":7,"_id":7,"school_name":"Saginaw United","team_sport":"Football","team_year":"2023","type":"player","name":"Marcus Williams","media_url":"https://saginaw-trophy-media.s3.amazonaws.com/items/individuals-[7].webp","number":"7","position":"Quarterback","graduation_year":"","sport":"","college":"Football","professional_team":"","points_per_game":"","assists":"","rebounds":"","passing_yards":"","touchdowns":"2500","completion_percentage":"28","other_stat_name":"65.4"},{"rowNumber":8,"_id":8,"school_name":"Saginaw High","team_sport":"","team_year":"","type":"d1_athlete","name":"Michael Thompson","media_url":"https://saginaw-trophy-media.s3.amazonaws.com/items/individuals-[8].webp","number":"","position":"","graduation_year":"2020","sport":"Basketball","college":"Michigan State"},{"rowNumber":9,"_id":9,"school_name":"Saginaw High","team_sport":"","team_year":"","type":"pro_athlete","name":"LaMarr Woodley","media_url":"https://saginaw-trophy-media.s3.amazonaws.com/items/individuals-[9].webp","number":"","position":"","graduation_year":"2003","sport":"Football","college":"","professional_team":"NFL - Pittsburgh Steelers"},{"rowNumber":10,"_id":10,"school_name":"Saginaw High","team_sport":"Men's Basketball","team_year":"2023","type":"player","name":"John Doe","media_url":"https://saginaw-trophy-media.s3.amazonaws.com/items/individuals-[10].webp","number":"30","position":"Guard","graduation_year":"","sport":"","college":"Basketball","professional_team":"","points_per_game":"","assists":"14.2","rebounds":"6","passing_yards":"5.1"},{"rowNumber":11,"_id":11,"school_name":"Saginaw High","team_sport":"Baseball","team_year":"2023","type":"player","name":"John Smith","media_url":"https://saginaw-trophy-media.s3.amazonaws.com/items/individuals-[11].webp","number":"30","position":"Pitcher","graduation_year":"","sport":"","college":"Baseball"},{"rowNumber":12,"_id":12,"school_name":"Saginaw High","team_sport":"Baseball","team_year":"2023","type":"player","name":"Jack Smith","media_url":"","number":"30","position":"baseman","graduation_year":"","sport":"","college":"Baseball"}]}
+Response headers
+{
+  "Access-Control-Allow-Headers": "Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Requested-With",
+  "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
+  "Access-Control-Allow-Origin": "*",
+  "Content-Type": "application/json",
+  "X-Amzn-Trace-Id": "Root=1-67fd2093-9dc4d55c175310c13982fcec;Parent=5dd95953a828dfd0;Sampled=0;Lineage=1:d3ab409f:0"
+}
+Logs
+Execution log for request 69bf9e62-b146-42df-8ce6-2c854f03542e
+Mon Apr 14 14:49:55 UTC 2025 : Starting execution for request: 69bf9e62-b146-42df-8ce6-2c854f03542e
+Mon Apr 14 14:49:55 UTC 2025 : HTTP Method: GET, Resource Path: /api/individuals
+Mon Apr 14 14:49:55 UTC 2025 : Method request path: {}
+Mon Apr 14 14:49:55 UTC 2025 : Method request query string: {}
+Mon Apr 14 14:49:55 UTC 2025 : Method request headers: {}
+Mon Apr 14 14:49:55 UTC 2025 : Method request body before transformations: 
+Mon Apr 14 14:49:55 UTC 2025 : Endpoint request URI: https://lambda.us-east-1.amazonaws.com/2015-03-31/functions/arn:aws:lambda:us-east-1:984369402869:function:api-main/invocations
+Mon Apr 14 14:49:55 UTC 2025 : Endpoint request headers: {X-Amz-Date=20250414T144955Z, x-amzn-apigateway-api-id=72w9r9ffd8, Accept=application/json, User-Agent=AmazonAPIGateway_72w9r9ffd8, Host=lambda.us-east-1.amazonaws.com, X-Amz-Content-Sha256=886b03a55e5b65c0e8fa1b2da07f8787054b2e4ec11d5784f6870c8f429a1991, X-Amzn-Trace-Id=Root=1-67fd2093-9dc4d55c175310c13982fcec, x-amzn-lambda-integration-tag=69bf9e62-b146-42df-8ce6-2c854f03542e, Authorization=*********************************************************************************************************************************************************************************************************************************************************************************************************************************************52d7c5, X-Amz-Source-Arn=arn:aws:execute-api:us-east-1:984369402869:72w9r9ffd8/test-invoke-stage/GET/api/individuals, X-Amz-Security-Token=IQoJb3JpZ2luX2VjEI7//////////wEaCXVzLWVhc3QtMSJIMEYCIQCxAY68KGGBcu8QsIfH9ITexZ4thINYkuGUOR2DVTtrbwIhAJ+xUWixoM6zgB6k7iQhN5wEwztsEz [TRUNCATED]
+Mon Apr 14 14:49:55 UTC 2025 : Endpoint request body after transformations: {"resource":"/api/individuals","path":"/api/individuals","httpMethod":"GET","headers":null,"multiValueHeaders":null,"queryStringParameters":null,"multiValueQueryStringParameters":null,"pathParameters":null,"stageVariables":null,"requestContext":{"resourceId":"y4n0c2","resourcePath":"/api/individuals","httpMethod":"GET","extendedRequestId":"JBIHGHqlIAMF2pQ=","requestTime":"14/Apr/2025:14:49:55 +0000","path":"/api/individuals","accountId":"984369402869","protocol":"HTTP/1.1","stage":"test-invoke-stage","domainPrefix":"testPrefix","requestTimeEpoch":1744642195405,"requestId":"69bf9e62-b146-42df-8ce6-2c854f03542e","identity":{"cognitoIdentityPoolId":null,"cognitoIdentityId":null,"apiKey":"test-invoke-api-key","principalOrgId":null,"cognitoAuthenticationType":null,"userArn":"arn:aws:iam::984369402869:root","apiKeyId":"test-invoke-api-key-id","userAgent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36 Edg/1 [TRUNCATED]
+Mon Apr 14 14:49:55 UTC 2025 : Sending request to https://lambda.us-east-1.amazonaws.com/2015-03-31/functions/arn:aws:lambda:us-east-1:984369402869:function:api-main/invocations
+Mon Apr 14 14:49:56 UTC 2025 : Received response. Status: 200, Integration latency: 662 ms
+Mon Apr 14 14:49:56 UTC 2025 : Endpoint response headers: {Date=Mon, 14 Apr 2025 14:49:56 GMT, Content-Type=application/json, Content-Length=5083, Connection=keep-alive, x-amzn-RequestId=16365556-e96b-4cbb-a282-6aaced25e734, x-amzn-Remapped-Content-Length=0, X-Amz-Executed-Version=$LATEST, X-Amzn-Trace-Id=Root=1-67fd2093-9dc4d55c175310c13982fcec;Parent=5dd95953a828dfd0;Sampled=0;Lineage=1:d3ab409f:0}
+Mon Apr 14 14:49:56 UTC 2025 : Endpoint response body before transformations: {"statusCode":200,"headers":{"Access-Control-Allow-Origin":"*","Access-Control-Allow-Headers":"Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Requested-With","Access-Control-Allow-Methods":"GET,POST,OPTIONS","Content-Type":"application/json"},"body":"{\"data\":[{\"rowNumber\":2,\"_id\":2,\"school_name\":\"Saginaw High\",\"team_sport\":\"Men's Basketball\",\"team_year\":\"2023\",\"type\":\"player\",\"name\":\"John Doe\",\"media_url\":\"https://saginaw-trophy-media.s3.amazonaws.com/items/individuals-[2].webp\",\"number\":\"23\",\"position\":\"Guard\",\"graduation_year\":\"\",\"sport\":\"\",\"college\":\"Basketball\",\"professional_team\":\"\",\"points_per_game\":\"\",\"assists\":\"18.5\",\"rebounds\":\"5.2\",\"passing_yards\":\"4.1\"},{\"rowNumber\":3,\"_id\":3,\"school_name\":\"Saginaw High\",\"team_sport\":\"Men's Basketball\",\"team_year\":\"2022\",\"type\":\"player\",\"name\":\"John Doe\",\"media_url\":\"https://saginaw-trophy-media.s3.amazonaws.com/items/in [TRUNCATED]
+Mon Apr 14 14:49:56 UTC 2025 : Method response body after transformations: {"data":[{"rowNumber":2,"_id":2,"school_name":"Saginaw High","team_sport":"Men's Basketball","team_year":"2023","type":"player","name":"John Doe","media_url":"https://saginaw-trophy-media.s3.amazonaws.com/items/individuals-[2].webp","number":"23","position":"Guard","graduation_year":"","sport":"","college":"Basketball","professional_team":"","points_per_game":"","assists":"18.5","rebounds":"5.2","passing_yards":"4.1"},{"rowNumber":3,"_id":3,"school_name":"Saginaw High","team_sport":"Men's Basketball","team_year":"2022","type":"player","name":"John Doe","media_url":"https://saginaw-trophy-media.s3.amazonaws.com/items/individuals-[2].webp","number":"23","position":"Guard","graduation_year":"","sport":"","college":"Basketball","professional_team":"","points_per_game":"","assists":"16.7","rebounds":"4.8","passing_yards":"3.9"},{"rowNumber":4,"_id":4,"school_name":"Saginaw High","team_sport":"Men's Basketball","team_year":"2023","type":"player","name":"Alex Johnson","med [TRUNCATED]
+Mon Apr 14 14:49:56 UTC 2025 : Method response headers: {Access-Control-Allow-Origin=*, Access-Control-Allow-Headers=Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Requested-With, Access-Control-Allow-Methods=GET,POST,OPTIONS, Content-Type=application/json, X-Amzn-Trace-Id=Root=1-67fd2093-9dc4d55c175310c13982fcec;Parent=5dd95953a828dfd0;Sampled=0;Lineage=1:d3ab409f:0}
+Mon Apr 14 14:49:56 UTC 2025 : Successfully completed execution
+Mon Apr 14 14:49:56 UTC 2025 : Method completed with status: 200
+
+
+Executing function: succeeded (logs )
+Details
+{
+  "statusCode": 500,
+  "headers": {
+    "Access-Control-Allow-Origin": "*",
+    "Content-Type": "application/json"
+  },
+  "body": "{\"error\":\"An unexpected error occurred: Cannot read properties of undefined (reading 'includes')\",\"data\":[]}"
+}
+Summary
+Code SHA-256
+K2rJKCELYtEwEEtrH/A5J296MGPBwWFBlZ6NxMfiebk=
+Function version
+$LATEST
+Duration
+87.17 ms
+Resources configured
+256 MB
+Execution time
+10 seconds ago
+Request ID
+ef911500-78ca-4bc7-a052-d8fe04dc99e0
+Billed duration
+88 ms
+Max memory used
+72 MB
+Log output
+The area below shows the last 4 KB of the execution log. Click here  to view the corresponding CloudWatch log group.
+
+START RequestId: ef911500-78ca-4bc7-a052-d8fe04dc99e0 Version: $LATEST
+2025-04-14T14:51:34.967Z	ef911500-78ca-4bc7-a052-d8fe04dc99e0	ERROR	Error in API handler: TypeError: Cannot read properties of undefined (reading 'includes')
+    at Runtime.exports.handler (/var/task/index.js:26:20)
+    at Runtime.handleOnceNonStreaming (file:///var/runtime/index.mjs:1173:29)
+END RequestId: ef911500-78ca-4bc7-a052-d8fe04dc99e0
+REPORT RequestId: ef911500-78ca-4bc7-a052-d8fe04dc99e0	Duration: 87.17 ms	Billed Duration: 88 ms	Memory Size: 256 MB	Max Memory Used: 72 MB	
+
+
+take the tests with a grain of salt as i'm not sure if I set up the tests right
+
+# This AWS SAM template has been generated from your function's configuration. If
+# your function has one or more triggers, note that the AWS resources associated
+# with these triggers aren't fully specified in this template and include
+# placeholder values. Open this template in AWS Infrastructure Composer or your
+# favorite IDE and modify it to specify a serverless application with other AWS
+# resources.
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: An AWS Serverless Application Model template describing your function.
+Resources:
+  apimain:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: .
+      Description: ''
+      MemorySize: 256
+      Timeout: 30
+      Handler: index.handler
+      Runtime: nodejs16.x
+      Architectures:
+        - x86_64
+      EphemeralStorage:
+        Size: 512
+      Environment:
+        Variables:
+          ENV: main
+      EventInvokeConfig:
+        MaximumEventAgeInSeconds: 21600
+        MaximumRetryAttempts: 2
+      PackageType: Zip
+      Policies:
+        - Statement:
+            - Action:
+                - logs:CreateLogGroup
+                - logs:CreateLogStream
+                - logs:PutLogEvents
+              Resource: >-
+                arn:aws:logs:us-east-1:984369402869:log-group:/aws/lambda/api-main:log-stream:*
+              Effect: Allow
+            - Effect: Allow
+              Action:
+                - logs:CreateLogGroup
+                - logs:CreateLogStream
+                - logs:PutLogEvents
+              Resource: '*'
+      RecursiveLoop: Terminate
+      SnapStart:
+        ApplyOn: None
+      Tags:
+        user:Application: saginaw-trophy-case
+        user:Stack: main
+      Events:
+        Api1:
+          Type: Api
+          Properties:
+            Path: /MyResource
+            Method: ANY
+      RuntimeManagementConfig:
+        UpdateRuntimeOn: Auto
+
+
+Triggers (1) Info
+
+Fix errors
+Edit
+Delete
+Add trigger
+
+1
+
+Trigger
+
+API Gateway:
+arn:aws:execute-api:us-east-1:984369402869:72w9r9ffd8/*/*/*
+The API with ID 72w9r9ffd8 doesn’t include a resource with path /* having an integration arn:aws:lambda:us-east-1:984369402869:function:api-main on the ANY method.
+
+Details
+isComplexStatement: No
+Service principal: apigateway.amazonaws.com
+Statement ID: amplify-trophydemov4-main-145dc-apiapi-1EU9RULMI7HIB-functionapiPermission-ZaqRLhTuQ4QX
+
+
+Tags (5) Info
+Manage tags
+
+1
+
+Key
+Value
+aws:cloudformation:logical-id
+LambdaFunction
+aws:cloudformation:stack-id
+arn:aws:cloudformation:us-east-1:984369402869:stack/amplify-trophydemov4-main-145dc-functionapi-MHNFMIT80XW6/41e9f830-193c-11f0-a8d5-0affc9380531
+aws:cloudformation:stack-name
+amplify-trophydemov4-main-145dc-functionapi-MHNFMIT80XW6
+user:Application
+saginaw-trophy-case
+user:Stack
+main
+
+
+Events (16)
+View root cause
+
+
+Timestamp
+	
+Logical ID
+	
+Status
+	
+Detailed status
+	
+Status reason
+
+Timestamp
+	
+Logical ID
+	
+Status
+	
+Detailed status
+	
+Status reason
+
+2025-04-14 07:37:33 UTC-0700
+amplify-trophydemov4-main-145dc-functionapi-MHNFMIT80XW6 
+UPDATE_COMPLETE
+-
+-
+2025-04-14 07:36:59 UTC-0700
+amplify-trophydemov4-main-145dc-functionapi-MHNFMIT80XW6 
+UPDATE_COMPLETE_CLEANUP_IN_PROGRESS
+-
+-
+2025-04-14 07:36:57 UTC-0700
+LambdaFunction 
+UPDATE_COMPLETE
+-
+-
+2025-04-14 07:36:49 UTC-0700
+LambdaFunction 
+UPDATE_IN_PROGRESS
+-
+-
+2025-04-14 07:36:45 UTC-0700
+amplify-trophydemov4-main-145dc-functionapi-MHNFMIT80XW6 
+UPDATE_IN_PROGRESS
+-
+User Initiated
+2025-04-14 07:25:54 UTC-0700
+amplify-trophydemov4-main-145dc-functionapi-MHNFMIT80XW6 
+CREATE_COMPLETE
+-
+-
+2025-04-14 07:25:53 UTC-0700
+lambdaexecutionpolicy
+CREATE_COMPLETE
+-
+-
+2025-04-14 07:25:37 UTC-0700
+lambdaexecutionpolicy
+CREATE_IN_PROGRESS
+-
+Resource creation Initiated
+2025-04-14 07:25:36 UTC-0700
+lambdaexecutionpolicy
+CREATE_IN_PROGRESS
+-
+-
+2025-04-14 07:25:36 UTC-0700
+LambdaFunction 
+CREATE_COMPLETE
+-
+-
+2025-04-14 07:25:27 UTC-0700
+LambdaFunction 
+CREATE_IN_PROGRESS
+-
+Resource creation Initiated
+2025-04-14 07:25:26 UTC-0700
+LambdaFunction
+CREATE_IN_PROGRESS
+-
+-
+2025-04-14 07:25:25 UTC-0700
+LambdaExecutionRole 
+CREATE_COMPLETE
+-
+-
+2025-04-14 07:25:07 UTC-0700
+LambdaExecutionRole 
+CREATE_IN_PROGRESS
+-
+Resource creation Initiated
+2025-04-14 07:25:06 UTC-0700
+LambdaExecutionRole
+CREATE_IN_PROGRESS
+-
+-
+2025-04-14 07:25:04 UTC-0700
+amplify-trophydemov4-main-145dc-functionapi-MHNFMIT80XW6 
+CREATE_IN_PROGRESS
+-
+User Initiated
+
+
+Resources (3)
+
+
+1
+
+
+Logical ID
+	
+Physical ID
+	
+Type
+	
+Status
+	
+Module
+
+Logical ID
+	
+Physical ID
+	
+Type
+	
+Status
+	
+Module
+
+lambdaexecutionpolicy
+ampli-lambd-9EAe6OZnFYSM
+AWS::IAM::Policy
+CREATE_COMPLETE
+-
+LambdaExecutionRole
+apiLambdaRole-main 
+AWS::IAM::Role
+CREATE_COMPLETE
+-
+LambdaFunction
+api-main 
+
+
+Outputs (5)
+
+
+1
+
+
+Key
+	
+Value
+	
+Description
+	
+Export name
+
+Key
+	
+Value
+	
+Description
+	
+Export name
+
+Arn
+arn:aws:lambda:us-east-1:984369402869:function:api-main
+-
+-
+LambdaExecutionRole
+apiLambdaRole-main
+-
+-
+LambdaExecutionRoleArn
+arn:aws:iam::984369402869:role/apiLambdaRole-main
+-
+-
+Name
+api-main
+-
+-
+Region
+us-east-1
+
+---
+
+_**Assistant**_
+
+
+
+---
+
 
 
 ---
