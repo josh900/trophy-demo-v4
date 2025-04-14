@@ -13,50 +13,43 @@
     <script>
         // Function to detect API Gateway URL based on environment
         function detectApiEndpoint() {
-            // Default to an empty string for relative paths
-            window.API_ENDPOINT = '';
+            // IMPORTANT: Set the API Gateway URL manually from AWS
+            // We need to use the API Gateway URL from your AWS account
+            // Get this URL from the API Gateway console under Stages section
+            const apiGatewayUrl = "https://72w9r9ffd8.execute-api.us-east-1.amazonaws.com/Prod";
+            window.API_ENDPOINT = apiGatewayUrl;
+            console.log('Using hardcoded API Gateway URL:', window.API_ENDPOINT);
             
-            // Check if we're in Amplify hosting
-            const isAmplifyHosted = window.location.hostname.includes('amplifyapp.com');
-            
-            if (isAmplifyHosted) {
-                console.log('Running in Amplify hosting, attempting to fetch API info');
-                
-                // Path to API info file in Amplify hosting
-                const apiInfoPath = '/.amplify-hosting/api-info.json';
-                
-                // Try to fetch the API info from Amplify hosting
-                fetch(apiInfoPath)
-                    .then(response => {
-                        if (!response.ok) {
-                            throw new Error('API info not available');
-                        }
-                        return response.json();
-                    })
-                    .then(data => {
-                        console.log('API info data:', data);
-                        if (data && data.api && data.api.api && data.api.api.RootUrl) {
-                            window.API_ENDPOINT = data.api.api.RootUrl;
-                            console.log('API Gateway URL detected from Amplify:', window.API_ENDPOINT);
-                        } else {
-                            // If no API info, fall back to the API Gateway URL
-                            window.API_ENDPOINT = "https://72w9r9ffd8.execute-api.us-east-1.amazonaws.com/Prod";
-                            console.log('API Gateway URL not found in Amplify outputs, using fallback URL:', window.API_ENDPOINT);
-                        }
-                    })
-                    .catch(error => {
-                        console.warn('Error fetching API Gateway URL:', error);
-                        // Fall back to the API Gateway URL if fetch fails
-                        window.API_ENDPOINT = "https://72w9r9ffd8.execute-api.us-east-1.amazonaws.com/Prod";
-                        console.log('Using fallback API Gateway URL:', window.API_ENDPOINT);
-                    });
+            // Amplify hosting detection - only attempt in production
+            if (window.location.hostname.includes('amplifyapp.com')) {
+                try {
+                    // First try to get the API URL from the Amplify outputs
+                    fetch('/.amplify-hosting/api-info.json')
+                        .then(response => {
+                            if (!response.ok) {
+                                throw new Error('API info not available');
+                            }
+                            return response.json();
+                        })
+                        .then(data => {
+                            if (data && data.api && data.api.api && data.api.api.RootUrl) {
+                                window.API_ENDPOINT = data.api.api.RootUrl;
+                                console.log('API Gateway URL detected from Amplify:', window.API_ENDPOINT);
+                            } else {
+                                console.log('API Gateway URL not found in amplify outputs, using hardcoded URL');
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error fetching API Gateway URL:', error);
+                            console.log('Using hardcoded API Gateway URL');
+                        });
+                } catch (error) {
+                    console.error('Error in API detection:', error);
+                }
             } else if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
                 // For local development
+                window.API_ENDPOINT = ''; // Use relative paths for local dev
                 console.log('Using relative API paths for local development');
-            } else {
-                // For other environments (not Amplify hosting or localhost)
-                window.API_ENDPOINT = "https://72w9r9ffd8.execute-api.us-east-1.amazonaws.com/Prod";
-                console.log('Using fallback API Gateway URL for non-Amplify environment:', window.API_ENDPOINT);
             }
         }
         
