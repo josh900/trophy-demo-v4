@@ -12,13 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
         selectedYear: null,
         selectedTeam: null,
         selectedPlayer: null,
-        selectedAthlete: null,
-        currentImageIndex: 0,
-        searchQuery: '',
-        searchResults: {
-            players: [],
-            teams: []
-        }
+        selectedAthlete: null
     };
 
     // DOM Elements
@@ -26,8 +20,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const backButton = document.getElementById('back-button');
     const homeButton = document.getElementById('home-button');
     const loadingSpinner = document.getElementById('loading-spinner');
-    const searchInput = document.getElementById('search-input');
-    const searchButton = document.getElementById('search-button');
 
     // Default Theme Colors (for resetting)
     let defaultTheme = {
@@ -306,13 +298,7 @@ document.addEventListener('DOMContentLoaded', () => {
             selectedYear: null,
             selectedTeam: null,
             selectedPlayer: null,
-            selectedAthlete: null,
-            currentImageIndex: 0,
-            searchQuery: '',
-            searchResults: {
-                players: [],
-                teams: []
-            }
+            selectedAthlete: null
         };
         
         // Load default theme values
@@ -667,14 +653,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 renderAthleteDetailView();
                 updateThemeColors(state.selectedSchool);
                 break;
-            case 'all-players':
-                renderAllPlayersView();
-                resetThemeColors(); // Use default colors for all players view
-                break;
-            case 'search-results':
-                renderSearchResultsView();
-                resetThemeColors(); // Use default colors for search results
-                break;
             default:
                 console.error('Unknown view:', viewName);
                 renderSchoolsView(); // Fallback to schools view
@@ -773,51 +751,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const clone = template.content.cloneNode(true);
         const schoolsGrid = clone.querySelector('#schools-grid');
 
-        // Add "Browse Players" card first
-        const browsePlayersCard = createBrowsePlayersCard();
-        schoolsGrid.appendChild(browsePlayersCard);
-
-        // Then add school cards
         state.schools.forEach(school => {
             const schoolCard = createSchoolCard(school);
             schoolsGrid.appendChild(schoolCard);
         });
 
         contentContainer.appendChild(clone);
-    }
-
-    // Create Browse Players Card
-    function createBrowsePlayersCard() {
-        const cardElement = document.createElement('div');
-        cardElement.className = 'card school-card browse-players-card';
-        
-        const cardMedia = document.createElement('div');
-        cardMedia.className = 'card-media';
-        cardMedia.style.backgroundColor = defaultTheme.primary;
-        
-        // Create icon element
-        const icon = document.createElement('i');
-        icon.className = 'fas fa-users';
-        icon.style.color = defaultTheme.secondary;
-        cardMedia.appendChild(icon);
-        
-        const cardContent = document.createElement('div');
-        cardContent.className = 'card-content';
-        
-        const cardTitle = document.createElement('h3');
-        cardTitle.className = 'card-title';
-        cardTitle.textContent = 'Browse Players';
-        cardContent.appendChild(cardTitle);
-        
-        cardElement.appendChild(cardMedia);
-        cardElement.appendChild(cardContent);
-        
-        // Add click event
-        cardElement.addEventListener('click', () => {
-            navigateToView('all-players');
-        });
-        
-        return cardElement;
     }
 
     function createSchoolCard(school) {
@@ -1092,405 +1031,152 @@ document.addEventListener('DOMContentLoaded', () => {
         contentContainer.appendChild(clone);
     }
 
-    // Updated Player Detail View for Unified Player Display
+    function createPlayerCard(player) {
+        const template = document.getElementById('player-card-template');
+        const clone = template.content.cloneNode(true);
+        
+        const cardElement = clone.querySelector('.player-card');
+        const cardMedia = clone.querySelector('.card-media');
+        const playerImage = cardMedia.querySelector('.player-image'); // Find image inside media
+        const playerName = clone.querySelector('.card-title');
+        const playerPosition = clone.querySelector('.player-position');
+        const playerNumber = clone.querySelector('.player-number');
+        
+        // Clear media container initially, except for the img tag
+        cardMedia.innerHTML = ''; 
+        cardMedia.appendChild(playerImage); 
+        playerImage.style.display = 'none'; // Hide image initially
+        
+        // Set image or fallback
+        if (player.media_url) {
+            playerImage.src = player.media_url;
+            playerImage.style.display = 'block';
+        } else {
+            // Determine gender and sport for fallback
+            const gender = player.gender || (player.name && (player.name.toLowerCase().includes('women') || player.name.toLowerCase().includes('girl')) ? 'female' : 'male');
+            // Use selectedSport from state as context
+            cardMedia.innerHTML = getSvgFallback('player', gender, state.selectedSport); 
+        }
+        
+        playerImage.alt = player.name || 'Player';
+        playerName.textContent = player.name || 'Unknown Player';
+        playerPosition.textContent = player.position || '';
+        playerNumber.textContent = player.number ? `#${player.number}` : '';
+        
+        cardElement.style.borderColor = 'var(--primary-color)';
+        
+        cardElement.addEventListener('click', () => {
+            state.selectedPlayer = player;
+            navigateToView('player-detail');
+        });
+        
+        return clone;
+    }
+
+    // Player Detail View
     function renderPlayerDetailView() {
         const template = document.getElementById('player-detail-template');
         const clone = template.content.cloneNode(true);
         
         const player = state.selectedPlayer;
-        const playerInstances = player.instances;
-        
-        if (!playerInstances || playerInstances.length === 0) {
-            contentContainer.innerHTML = '<div class="error-container"><p>Player data not available</p></div>';
-            return;
-        }
-        
-        // Sort instances to prioritize the current context if available
-        let sortedInstances = [...playerInstances];
-        
-        // If we came from a team, prioritize that team's player instance
-        if (player.fromTeam) {
-            sortedInstances.sort((a, b) => {
-                const aMatch = (a.school_name === player.fromTeam.school.name && 
-                               a.team_sport === player.fromTeam.sport && 
-                               a.team_year === player.fromTeam.year);
-                               
-                const bMatch = (b.school_name === player.fromTeam.school.name && 
-                               b.team_sport === player.fromTeam.sport && 
-                               b.team_year === player.fromTeam.year);
-                               
-                if (aMatch && !bMatch) return -1;
-                if (!aMatch && bMatch) return 1;
-                return 0;
-            });
-        }
-        
-        // Reset current image index
-        state.currentImageIndex = 0;
         
         // Apply theme colors
         const playerNameTitle = clone.querySelector('.player-name');
         playerNameTitle.style.color = 'var(--primary-color)';
-        playerNameTitle.textContent = player.name || 'Unknown Player';
+        const statsHeader = clone.querySelector('.player-stats h3');
+        statsHeader.style.color = 'var(--primary-color)';
+        statsHeader.style.borderBottomColor = 'var(--secondary-color)';
         
-        // Set up media carousel
-        setupPlayerMediaCarousel(clone, sortedInstances);
+        // Set player details
+        const playerPhoto = clone.querySelector('.player-photo');
+        const playerMediaContainer = clone.querySelector('.player-media');
+        playerMediaContainer.style.borderColor = 'var(--secondary-color)';
         
-        // Set up player details section
-        const playerDetails = clone.querySelector('.player-details');
-        renderPlayerDetails(playerDetails, sortedInstances);
+        // Clear media container initially, except for the img tag
+        playerMediaContainer.innerHTML = ''; 
+        playerMediaContainer.appendChild(playerPhoto); 
+        playerPhoto.style.display = 'none'; // Hide image initially
         
-        // Set up teams section
-        const teamsContainer = clone.querySelector('.teams-container');
-        renderPlayerTeams(teamsContainer, sortedInstances);
-        
-        // Set up stats sections
-        const statsContainer = clone.querySelector('.player-stats-sections');
-        renderPlayerStats(statsContainer, sortedInstances);
-        
-        contentContainer.appendChild(clone);
-        
-        // Set up event listeners for the carousel
-        setupCarouselControls();
-    }
-
-    // Set up the player image carousel
-    function setupPlayerMediaCarousel(container, playerInstances) {
-        const mediaCarousel = container.querySelector('.player-media-carousel');
-        const mediaContainer = mediaCarousel.querySelector('.player-media-container');
-        const playerMedia = mediaContainer.querySelector('.player-media');
-        const playerPhoto = playerMedia.querySelector('.player-photo');
-        const mediaIndicator = mediaCarousel.querySelector('.media-indicator');
-        
-        // Clear existing content
-        playerMedia.innerHTML = '';
-        playerMedia.appendChild(playerPhoto);
-        mediaIndicator.innerHTML = '';
-        
-        // Create media items for each player instance
-        playerInstances.forEach((instance, index) => {
-            // Create indicator dot
-            const dot = document.createElement('div');
-            dot.className = 'indicator-dot' + (index === 0 ? ' active' : '');
-            mediaIndicator.appendChild(dot);
-            
-            // Only load the first image initially
-            if (index === 0) {
-                if (instance.media_url) {
-                    playerPhoto.src = instance.media_url;
-                    playerPhoto.alt = `${instance.name} - ${instance.team_sport || ''} ${instance.team_year || ''}`;
-                    playerPhoto.style.display = 'block';
-                } else {
-                    const gender = instance.gender || (instance.name && (instance.name.toLowerCase().includes('women') || instance.name.toLowerCase().includes('girl')) ? 'female' : 'male');
-                    playerMedia.innerHTML = getSvgFallback('player', gender, instance.team_sport);
-                    playerPhoto.style.display = 'none';
-                }
-            }
-        });
-        
-        // Hide navigation buttons if only one image
-        const prevButton = mediaContainer.querySelector('.prev-btn');
-        const nextButton = mediaContainer.querySelector('.next-btn');
-        
-        if (playerInstances.length <= 1) {
-            prevButton.style.display = 'none';
-            nextButton.style.display = 'none';
-            mediaIndicator.style.display = 'none';
-        }
-    }
-
-    // Set up carousel navigation controls
-    function setupCarouselControls() {
-        const prevButton = document.querySelector('.player-media-container .prev-btn');
-        const nextButton = document.querySelector('.player-media-container .next-btn');
-        const dots = document.querySelectorAll('.indicator-dot');
-        
-        if (!prevButton || !nextButton) return;
-        
-        prevButton.addEventListener('click', () => {
-            navigatePlayerImages(-1);
-        });
-        
-        nextButton.addEventListener('click', () => {
-            navigatePlayerImages(1);
-        });
-        
-        // Add click events to indicator dots
-        dots.forEach((dot, index) => {
-            dot.addEventListener('click', () => {
-                state.currentImageIndex = index;
-                updatePlayerImage();
-            });
-        });
-    }
-
-    // Navigate between player images
-    function navigatePlayerImages(direction) {
-        const playerInstances = state.selectedPlayer.instances;
-        if (!playerInstances || playerInstances.length <= 1) return;
-        
-        state.currentImageIndex += direction;
-        
-        // Loop around if needed
-        if (state.currentImageIndex < 0) {
-            state.currentImageIndex = playerInstances.length - 1;
-        } else if (state.currentImageIndex >= playerInstances.length) {
-            state.currentImageIndex = 0;
-        }
-        
-        updatePlayerImage();
-    }
-
-    // Update the displayed player image
-    function updatePlayerImage() {
-        const playerInstances = state.selectedPlayer.instances;
-        if (!playerInstances) return;
-        
-        const instance = playerInstances[state.currentImageIndex];
-        if (!instance) return;
-        
-        const playerMedia = document.querySelector('.player-media');
-        const playerPhoto = document.querySelector('.player-photo');
-        
-        // Update image
-        if (instance.media_url) {
-            playerMedia.innerHTML = '';
-            playerMedia.appendChild(playerPhoto);
-            playerPhoto.src = instance.media_url;
-            playerPhoto.alt = `${instance.name} - ${instance.team_sport || ''} ${instance.team_year || ''}`;
+        if (player.media_url) {
+            playerPhoto.src = player.media_url;
             playerPhoto.style.display = 'block';
         } else {
-            playerMedia.innerHTML = getSvgFallback('player', instance.gender, instance.team_sport);
-            if (playerPhoto) playerPhoto.style.display = 'none';
+             const gender = player.gender || (player.name && (player.name.toLowerCase().includes('women') || player.name.toLowerCase().includes('girl')) ? 'female' : 'male');
+            playerMediaContainer.innerHTML = getSvgFallback('player', gender, state.selectedSport);
         }
         
-        // Update indicator dots
-        const dots = document.querySelectorAll('.indicator-dot');
-        dots.forEach((dot, index) => {
-            dot.className = 'indicator-dot' + (index === state.currentImageIndex ? ' active' : '');
-        });
-    }
-
-    // Render player details (unified view)
-    function renderPlayerDetails(container, playerInstances) {
-        container.innerHTML = ''; // Clear existing content
+        playerNameTitle.textContent = player.name || 'Unknown Player';
         
-        // Always show the first (priority) instance details first
-        const primaryInstance = playerInstances[0];
-        
-        // Add number and position if available
-        if (primaryInstance.number || primaryInstance.position) {
-            const detailItem = document.createElement('div');
-            detailItem.className = 'player-detail-item';
-            
-            const icon = document.createElement('i');
-            icon.className = 'fas fa-user';
-            detailItem.appendChild(icon);
-            
-            let detailText = '';
-            if (primaryInstance.number) detailText += `#${primaryInstance.number} `;
-            if (primaryInstance.position) detailText += primaryInstance.position;
-            
-            const span = document.createElement('span');
-            span.textContent = detailText.trim();
-            detailItem.appendChild(span);
-            
-            container.appendChild(detailItem);
+        const numberPosition = clone.querySelector('.player-number-position');
+        let numPosText = '';
+        if (player.number) numPosText += `#${player.number}`;
+        if (player.position) numPosText += (numPosText ? ' - ' : '') + player.position;
+        if (numPosText) {
+            numberPosition.textContent = numPosText;
+            numberPosition.style.display = 'block';
+        } else {
+            numberPosition.style.display = 'none';
         }
         
-        // Add primary team/sport info
-        const teamItem = document.createElement('div');
-        teamItem.className = 'player-detail-item';
+        clone.querySelector('.player-team').textContent = 
+            `${state.selectedSchool.name} ${state.selectedSport} (${state.selectedYear})`;
         
-        const teamIcon = document.createElement('i');
-        teamIcon.className = 'fas fa-trophy';
-        teamItem.appendChild(teamIcon);
-        
-        const teamSpan = document.createElement('span');
-        teamSpan.textContent = `${primaryInstance.school_name || ''} ${primaryInstance.team_sport || ''} ${primaryInstance.team_year || ''}`.trim();
-        teamItem.appendChild(teamSpan);
-        
-        container.appendChild(teamItem);
-        
-        // Check if player is D1 or Pro athlete
-        const d1Athletes = state.individuals.filter(
-            ind => ind.type === 'd1_athlete' && ind.name === state.selectedPlayer.name
-        );
-        
-        const proAthletes = state.individuals.filter(
-            ind => ind.type === 'pro_athlete' && ind.name === state.selectedPlayer.name
-        );
-        
-        if (d1Athletes.length > 0) {
-            const d1Item = document.createElement('div');
-            d1Item.className = 'player-detail-item';
-            
-            const d1Icon = document.createElement('i');
-            d1Icon.className = 'fas fa-graduation-cap';
-            d1Item.appendChild(d1Icon);
-            
-            const d1Span = document.createElement('span');
-            d1Span.textContent = d1Athletes[0].college || 'D1 Athlete';
-            d1Item.appendChild(d1Span);
-            
-            const d1Badge = document.createElement('span');
-            d1Badge.className = 'player-detail-badge';
-            d1Badge.textContent = 'D1';
-            d1Item.appendChild(d1Badge);
-            
-            container.appendChild(d1Item);
-        }
-        
-        if (proAthletes.length > 0) {
-            const proItem = document.createElement('div');
-            proItem.className = 'player-detail-item';
-            
-            const proIcon = document.createElement('i');
-            proIcon.className = 'fas fa-medal';
-            proItem.appendChild(proIcon);
-            
-            const proSpan = document.createElement('span');
-            proSpan.textContent = proAthletes[0].professional_team || 'Professional Athlete';
-            proItem.appendChild(proSpan);
-            
-            const proBadge = document.createElement('span');
-            proBadge.className = 'player-detail-badge';
-            proBadge.textContent = 'PRO';
-            proItem.appendChild(proBadge);
-            
-            container.appendChild(proItem);
-        }
-    }
-
-    // Render player teams section
-    function renderPlayerTeams(container, playerInstances) {
-        container.innerHTML = ''; // Clear existing content
-        
-        if (playerInstances.length <= 1) {
-            // If only one team, don't show the teams section
-            const parent = container.closest('.player-teams');
-            if (parent) parent.style.display = 'none';
-            return;
-        }
-        
-        // Create a badge for each unique team
-        const teams = [];
-        playerInstances.forEach(instance => {
-            // Create a unique key for each team
-            const teamKey = `${instance.school_name}-${instance.team_sport}-${instance.team_year}`;
-            if (!teams.some(t => t.key === teamKey)) {
-                teams.push({
-                    key: teamKey,
-                    school: instance.school_name,
-                    sport: instance.team_sport,
-                    year: instance.team_year,
-                    instance
-                });
-            }
-        });
-        
-        // Create team badges
-        teams.forEach(team => {
-            const badge = document.createElement('div');
-            badge.className = 'team-badge';
-            
-            const icon = document.createElement('i');
-            icon.className = 'fas ' + getSportIcon(team.sport);
-            badge.appendChild(icon);
-            
-            const text = document.createElement('span');
-            text.textContent = `${team.school} ${team.sport} (${team.year})`;
-            badge.appendChild(text);
-            
-            // Add click event to navigate to team
-            badge.addEventListener('click', () => {
-                // Find the team in state.teams
-                const matchingTeam = state.teams.find(t => 
-                    t.school_name === team.school && 
-                    t.sport_name === team.sport &&
-                    t.year === team.year
-                );
-                
-                if (matchingTeam) {
-                    // Find the school
-                    const school = state.schools.find(s => s.name === team.school);
-                    
-                    if (school) {
-                        state.selectedSchool = school;
-                        state.selectedSport = team.sport;
-                        state.selectedYear = team.year;
-                        state.selectedTeam = matchingTeam;
-                        navigateToView('team-detail');
-                    }
-                }
-            });
-            
-            container.appendChild(badge);
-        });
-    }
-
-    // Render player statistics sections
-    function renderPlayerStats(container, playerInstances) {
-        container.innerHTML = ''; // Clear existing content
-        
+        // Create stats cards
+        const statsGrid = clone.querySelector('.stats-grid');
         let statsFound = false;
         
-        // Create a section for each team's stats
-        playerInstances.forEach(instance => {
-            // Check if this instance has any stats
-            const hasStats = hasPlayerStats(instance);
-            
-            if (hasStats) {
+        // Check for common stats (case-insensitive keys if possible from data source)
+        const checkStat = (key, label) => {
+            if (player[key] !== null && player[key] !== undefined && player[key] !== '') {
+                addStatCard(statsGrid, player[key], label);
                 statsFound = true;
-                
-                // Create section
-                const section = document.createElement('div');
-                section.className = 'stats-section';
-                
-                // Create header
-                const header = document.createElement('div');
-                header.className = 'stats-section-header';
-                
-                const headerIcon = document.createElement('i');
-                headerIcon.className = 'fas ' + getSportIcon(instance.team_sport);
-                header.appendChild(headerIcon);
-                
-                const headerText = document.createElement('span');
-                headerText.textContent = `${instance.team_sport} (${instance.team_year}) Statistics`;
-                header.appendChild(headerText);
-                
-                section.appendChild(header);
-                
-                // Create stats grid
-                const statsGrid = document.createElement('div');
-                statsGrid.className = 'stats-grid';
-                
-                // Add stats
-                addPlayerStats(statsGrid, instance);
-                
-                section.appendChild(statsGrid);
-                container.appendChild(section);
             }
-        });
+        };
+
+        checkStat('assists', 'Assists');
+        checkStat('rebounds', 'Rebounds');
+        checkStat('points_per_game', 'PPG');
+        checkStat('passing_yards', 'Passing Yards');
+        checkStat('touchdowns', 'Touchdowns');
+        checkStat('completion_percentage', 'Completion %');
+        checkStat('goals', 'Goals');
+        checkStat('saves', 'Saves');
+        checkStat('batting_average', 'Batting Avg');
+        checkStat('home_runs', 'Home Runs');
+        checkStat('era', 'ERA');
+        checkStat('wins', 'Wins');
+        checkStat('losses', 'Losses');
+        checkStat('tackles', 'Tackles');
         
-        if (!statsFound) {
-            const noStats = document.createElement('p');
-            noStats.textContent = 'No statistics available for this player.';
-            noStats.style.textAlign = 'center';
-            container.appendChild(noStats);
+        // Check for other stats field
+        if (player.other_stat_name && player.other_stat_value) {
+            addStatCard(statsGrid, player.other_stat_value, player.other_stat_name);
+            statsFound = true;
         }
+
+        if (!statsFound) {
+            statsGrid.innerHTML = '<p style="grid-column: 1 / -1; text-align: center;">No statistics available for this player.</p>';
+        }
+        
+        contentContainer.appendChild(clone);
     }
 
-    // Check if player has any stats
-    function hasPlayerStats(player) {
-        const statFields = [
-            'assists', 'rebounds', 'points_per_game', 'passing_yards', 
-            'touchdowns', 'completion_percentage', 'goals', 'saves', 
-            'batting_average', 'home_runs', 'era', 'wins', 'losses', 'tackles'
-        ];
+    function addStatCard(container, value, label) {
+        const statCard = document.createElement('div');
+        statCard.className = 'stat-card';
         
-        return statFields.some(field => player[field] !== null && player[field] !== undefined && player[field] !== '') || 
-               (player.other_stat_name && player.other_stat_value);
+        const statValue = document.createElement('div');
+        statValue.className = 'stat-value';
+        statValue.textContent = value;
+        statValue.style.color = 'var(--primary-color)'; // Use theme color
+        
+        const statLabel = document.createElement('div');
+        statLabel.className = 'stat-label';
+        statLabel.textContent = label;
+        
+        statCard.appendChild(statValue);
+        statCard.appendChild(statLabel);
+        container.appendChild(statCard);
     }
 
     // D1 Athletes View
@@ -1749,9 +1435,6 @@ document.addEventListener('DOMContentLoaded', () => {
         backButton.addEventListener('click', navigateBack);
         homeButton.addEventListener('click', navigateHome);
         
-        // Set up search functionality
-        setupSearchFunctionality();
-        
         // Add trophy modal to body
         const trophyModal = document.createElement('div');
         trophyModal.className = 'trophy-modal';
@@ -1777,298 +1460,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const modalViewer = document.getElementById('modal-trophy-viewer');
             if(modalViewer) modalViewer.removeAttribute('auto-rotate'); 
         });
-    }
-
-    // Search functionality
-    function setupSearchFunctionality() {
-        // Add event listeners for search
-        searchInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                performSearch();
-            }
-        });
-        
-        searchButton.addEventListener('click', performSearch);
-    }
-
-    // Perform search
-    function performSearch() {
-        const query = searchInput.value.trim().toLowerCase();
-        if (!query) return;
-        
-        state.searchQuery = query;
-        
-        // Search for players
-        const playerResults = searchPlayers(query);
-        
-        // Search for teams
-        const teamResults = searchTeams(query);
-        
-        // Store results in state
-        state.searchResults = {
-            players: playerResults,
-            teams: teamResults
-        };
-        
-        // Navigate to search results view
-        navigateToView('search-results');
-    }
-
-    // Search for players
-    function searchPlayers(query) {
-        // Get unique players
-        const uniquePlayers = getUniquePlayers();
-        
-        // Filter players by name
-        return uniquePlayers.filter(player => 
-            player.name.toLowerCase().includes(query)
-        );
-    }
-
-    // Search for teams
-    function searchTeams(query) {
-        return state.teams.filter(team => 
-            team.school_name.toLowerCase().includes(query) ||
-            team.sport_name.toLowerCase().includes(query) ||
-            (team.achievement && team.achievement.toLowerCase().includes(query)) ||
-            team.year.toString().includes(query)
-        );
-    }
-
-    // Render search results
-    function renderSearchResultsView() {
-        const template = document.getElementById('search-results-template');
-        const clone = template.content.cloneNode(true);
-        
-        const title = clone.querySelector('.view-title');
-        title.textContent = `Search Results for "${state.searchQuery}"`;
-        
-        const playersGrid = clone.querySelector('.players-results-grid');
-        const teamsGrid = clone.querySelector('.teams-results-grid');
-        
-        // Render player results
-        if (state.searchResults.players.length === 0) {
-            const playersSection = clone.querySelector('#players-results');
-            playersSection.innerHTML = '<h3>Players</h3><p>No players found matching your search.</p>';
-        } else {
-            state.searchResults.players.forEach(player => {
-                const playerCard = createPlayerCard(player, true);
-                playersGrid.appendChild(playerCard);
-            });
-        }
-        
-        // Render team results
-        if (state.searchResults.teams.length === 0) {
-            const teamsSection = clone.querySelector('#teams-results');
-            teamsSection.innerHTML = '<h3>Teams</h3><p>No teams found matching your search.</p>';
-        } else {
-            state.searchResults.teams.forEach(team => {
-                const teamCard = createTeamSearchResultCard(team);
-                teamsGrid.appendChild(teamCard);
-            });
-        }
-        
-        contentContainer.appendChild(clone);
-    }
-
-    // Create team card for search results
-    function createTeamSearchResultCard(team) {
-        const cardElement = document.createElement('div');
-        cardElement.className = 'card team-search-card';
-        
-        const cardMedia = document.createElement('div');
-        cardMedia.className = 'card-media';
-        
-        // Create icon element
-        const icon = document.createElement('i');
-        icon.className = 'fas ' + getSportIcon(team.sport_name);
-        icon.style.color = 'var(--secondary-color)';
-        cardMedia.appendChild(icon);
-        
-        const cardContent = document.createElement('div');
-        cardContent.className = 'card-content';
-        
-        const cardTitle = document.createElement('h3');
-        cardTitle.className = 'card-title';
-        cardTitle.textContent = `${team.school_name} ${team.sport_name}`;
-        
-        const cardSubtitle = document.createElement('p');
-        cardSubtitle.className = 'card-subtitle';
-        cardSubtitle.textContent = `${team.year} - ${team.achievement || 'Championship'}`;
-        
-        cardContent.appendChild(cardTitle);
-        cardContent.appendChild(cardSubtitle);
-        
-        cardElement.appendChild(cardMedia);
-        cardElement.appendChild(cardContent);
-        
-        // Add click event
-        cardElement.addEventListener('click', () => {
-            // Find the school
-            const school = state.schools.find(s => s.name === team.school_name);
-            
-            if (school) {
-                state.selectedSchool = school;
-                state.selectedSport = team.sport_name;
-                state.selectedYear = team.year;
-                state.selectedTeam = team;
-                navigateToView('team-detail');
-            }
-        });
-        
-        return cardElement;
-    }
-
-    // All Players View
-    function renderAllPlayersView() {
-        const template = document.getElementById('all-players-template');
-        const clone = template.content.cloneNode(true);
-        const playersGrid = clone.querySelector('#all-players-grid');
-        
-        // Get all unique players by name (combining duplicates)
-        const uniquePlayers = getUniquePlayers();
-        
-        if (uniquePlayers.length === 0) {
-            playersGrid.innerHTML = '<p style="grid-column: 1 / -1; text-align: center;">No players found.</p>';
-        } else {
-            uniquePlayers.forEach(player => {
-                const playerCard = createPlayerCard(player);
-                playersGrid.appendChild(playerCard);
-            });
-        }
-        
-        // Add filter functionality
-        const filterInput = clone.querySelector('#players-filter');
-        filterInput.addEventListener('input', (e) => {
-            const filterValue = e.target.value.toLowerCase();
-            const playerCards = playersGrid.querySelectorAll('.player-card');
-            
-            playerCards.forEach(card => {
-                const playerName = card.querySelector('.card-title').textContent.toLowerCase();
-                if (playerName.includes(filterValue)) {
-                    card.style.display = 'block';
-                } else {
-                    card.style.display = 'none';
-                }
-            });
-        });
-        
-        contentContainer.appendChild(clone);
-    }
-
-    // Helper to get unique players by name (combining duplicates)
-    function getUniquePlayers() {
-        const playerMap = new Map();
-        
-        state.individuals.filter(individual => individual.type === 'player').forEach(player => {
-            if (!player.name) return; // Skip players without names
-            
-            if (playerMap.has(player.name)) {
-                // Add the current player's teams/info to the existing player
-                const existingPlayer = playerMap.get(player.name);
-                existingPlayer.instances.push(player);
-            } else {
-                // Create a new entry with the first instance
-                playerMap.set(player.name, {
-                    name: player.name,
-                    instances: [player],
-                    // Use the first instance's data for the card display
-                    media_url: player.media_url,
-                    position: player.position,
-                    number: player.number,
-                    gender: player.gender,
-                    sport_name: player.team_sport,
-                    school_name: player.school_name
-                });
-            }
-        });
-        
-        return Array.from(playerMap.values());
-    }
-
-    // Updated Player Card Creation for Unified View
-    function createPlayerCard(player, isSearch = false) {
-        const template = document.getElementById('player-card-template');
-        const clone = template.content.cloneNode(true);
-        
-        const cardElement = clone.querySelector('.player-card');
-        const cardMedia = clone.querySelector('.card-media');
-        const playerImage = cardMedia.querySelector('.player-image'); // Find image inside media
-        const playerName = clone.querySelector('.card-title');
-        const playerPosition = clone.querySelector('.player-position');
-        const playerNumber = clone.querySelector('.player-number');
-        
-        // Clear media container initially, except for the img tag
-        cardMedia.innerHTML = ''; 
-        cardMedia.appendChild(playerImage); 
-        playerImage.style.display = 'none'; // Hide image initially
-        
-        // Is this a unified player with multiple instances or a single player?
-        const displayPlayer = player.instances ? player.instances[0] : player;
-        
-        // Set image or fallback
-        if (displayPlayer.media_url) {
-            playerImage.src = displayPlayer.media_url;
-            playerImage.style.display = 'block';
-        } else {
-            // Determine gender and sport for fallback
-            const gender = displayPlayer.gender || (displayPlayer.name && (displayPlayer.name.toLowerCase().includes('women') || displayPlayer.name.toLowerCase().includes('girl')) ? 'female' : 'male');
-            // Use selectedSport from state as context or the player's sport
-            const sportContext = state.selectedSport || displayPlayer.team_sport || '';
-            cardMedia.innerHTML = getSvgFallback('player', gender, sportContext); 
-        }
-        
-        playerImage.alt = displayPlayer.name || 'Player';
-        playerName.textContent = displayPlayer.name || 'Unknown Player';
-        
-        // For unified player cards, show additional info about multiple sports
-        if (player.instances && player.instances.length > 1) {
-            playerPosition.textContent = `${player.instances.length} Teams`;
-            
-            // Get unique sports
-            const sports = [...new Set(player.instances.map(p => p.team_sport))].filter(Boolean);
-            if (sports.length > 0) {
-                playerNumber.textContent = sports.join(', ');
-            } else {
-                playerNumber.style.display = 'none';
-            }
-        } else {
-            playerPosition.textContent = displayPlayer.position || '';
-            playerNumber.textContent = displayPlayer.number ? `#${displayPlayer.number}` : '';
-            
-            // Hide empty elements
-            if (!displayPlayer.position) playerPosition.style.display = 'none';
-            if (!displayPlayer.number) playerNumber.style.display = 'none';
-        }
-        
-        cardElement.style.borderColor = 'var(--primary-color)';
-        
-        cardElement.addEventListener('click', () => {
-            if (player.instances) {
-                // For unified player view, store all instances
-                state.selectedPlayer = player;
-            } else {
-                // For single player, create a unified player object with one instance
-                state.selectedPlayer = {
-                    name: player.name,
-                    instances: [player]
-                };
-            }
-            
-            // If we got here from a team, store that context
-            if (state.currentView === 'team-detail') {
-                state.selectedPlayer.fromTeam = {
-                    school: state.selectedSchool,
-                    sport: state.selectedSport,
-                    year: state.selectedYear,
-                    team: state.selectedTeam
-                };
-            }
-            
-            navigateToView('player-detail');
-        });
-        
-        return clone;
     }
 
     // Initialize the application
